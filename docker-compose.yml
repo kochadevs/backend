@@ -1,0 +1,39 @@
+---
+
+services:
+  # db:
+  #   image: postgres:15.2-alpine
+  #   container_name: kochadb
+  #   restart: always
+  #   volumes:
+  #     - kochadata:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_PORT=${POSTGRES_PORT}
+  #     - LANG=en_US.UTF-8
+  #     - LC_ALL=en_US.UTF-8
+  #   ports:
+  #     - "5415:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: kochaapp
+    command: /bin/sh -c "uvicorn app:app --host 0.0.0.0 --port 8080 --reload"
+    volumes:
+      - ./:/code
+    ports:
+      - "8099:8080"
+    env_file:
+      - .env
+
+volumes:
+  kochadata:
