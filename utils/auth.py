@@ -2,7 +2,8 @@
 All auth utilities go here
 """
 import httpx
-from fastapi import Request, HTTPException, status
+from fastapi import Request, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
 from supabase import Client, create_client
 from core.config import settings
 from jose import JWTError, jwt
@@ -11,6 +12,16 @@ from jose import JWTError, jwt
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
 SUPABASE_JWT_SECRET = settings.SUPABASE_JWT_SECRET
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{SUPABASE_URL}/auth/v1/token")
+
+
+credential_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def get_supabase_client() -> Client:
