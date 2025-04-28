@@ -10,7 +10,10 @@ SQLALCHEMY_DB_URL = settings.SUPABASE_DB_URL
 
 
 engine: AsyncEngine = create_async_engine(
-    SQLALCHEMY_DB_URL, echo=False, connect_args={"statement_cache_size": 0}
+    SQLALCHEMY_DB_URL,
+    future=True,
+    echo=True,
+    connect_args={"statement_cache_size": 0},
 )
 SessionLocal: Any = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()

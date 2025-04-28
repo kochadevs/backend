@@ -18,7 +18,7 @@ class NewRoleValue(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
 
     def __str__(self) -> int:
         return self.name
@@ -36,7 +36,7 @@ class JobSearchStatus(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
 
 
 class RoleofInterest(Base):
@@ -51,7 +51,8 @@ class RoleofInterest(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
+    category = Column(String, nullable=True)
 
 
 class Industry(Base):
@@ -66,7 +67,7 @@ class Industry(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
 
 
 class Skills(Base):
@@ -81,7 +82,7 @@ class Skills(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
 
 
 class CareerGoals(Base):
@@ -96,4 +97,4 @@ class CareerGoals(Base):
         server_default=text("now()"),
         onupdate=func.now(),
     )
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
