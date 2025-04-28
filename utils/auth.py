@@ -9,8 +9,9 @@ from core.config import settings
 from jose import JWTError, jwt
 
 
-SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
+SUPABASE_ANON = settings.SUPABASE_ANON_KEY
+SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_JWT_SECRET = settings.SUPABASE_JWT_SECRET
 
 
@@ -63,15 +64,15 @@ async def signup_email(email: str, password: str):
 
 
 async def login_email(email: str, password: str):
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{SUPABASE_URL}/auth/v1/token",
-            headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
-            json={"email": email, "password": password, "grant_type": "password"}
-        )
-        if resp.status_code != status.HTTP_200_OK:
-            raise HTTPException(status_code=resp.status_code, detail=resp.json())
-        return resp.json()
+    supa = get_supabase_client()
+    try:
+        data = supa.auth.sign_in_with_password({
+            "email": email, "password": password
+        })
+        return data
+    except (HTTPException, Exception) as st_except:
+        print(st_except.__str__())
+        raise HTTPException(st_except)
 
 
 def get_social_login_url(provider: str, redirect_url: str) -> str:

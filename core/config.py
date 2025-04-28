@@ -20,6 +20,7 @@ class Settings:
     SUPABASE_KEY: str = os.environ.get("SUPABASE_KEY")
     SUPABASE_JWT_SECRET: str = os.environ.get("SUPABASE_JWT")
     SUPABASE_DB_URL: str = os.environ.get("DATABSE_URL")
+    SUPABASE_ANON_KEY: str = os.environ.get("SUPABASE_ANON_KEY")
 
 
 settings = Settings()
