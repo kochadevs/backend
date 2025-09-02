@@ -14,6 +14,8 @@ class CustomException:
     INVALID_EMAIL: str = "Invalid email"
     INADEQUATE_PERMISSIONS: str = "You do not have permission to perform this action"
     PASSWORD_RESET_ERROR: str = "An error occurred while resetting the password."
+    INVALID_TOKEN: str = "Invalid token"
+    TOKEN_EXPIRED: str = "Token has expired"
 
 
 exceptions = CustomException()
