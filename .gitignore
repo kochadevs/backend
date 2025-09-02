@@ -1,0 +1,9 @@
+.env
+__pycache__
+
+test.env
+/venv
+
+.vscode
+.DS_Store
+sample.py
