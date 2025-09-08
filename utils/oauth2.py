@@ -6,7 +6,7 @@ import bcrypt
 from typing import Optional
 from contextvars import ContextVar
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from api.api_models.user import TokenData
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -92,7 +92,7 @@ def get_current_user(
         return False
     # Check if token was issued before role was modified
     token_iat = datetime.fromtimestamp(payload.get("iat")).astimezone()
-    if user and datetime.now() > token_iat:
+    if user and datetime.now(timezone.utc) < token_iat:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",

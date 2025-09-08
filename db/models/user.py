@@ -43,6 +43,7 @@ class User(Base):
     location = Column(String, nullable=True)
     profile_pic = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=False)
+    current_role = Column(String, nullable=True)
     user_type = Column(
         Enum(UserTypeEnum, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False, default=UserTypeEnum.mentee

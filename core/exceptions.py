@@ -16,6 +16,11 @@ class CustomException:
     PASSWORD_RESET_ERROR: str = "An error occurred while resetting the password."
     INVALID_TOKEN: str = "Invalid token"
     TOKEN_EXPIRED: str = "Token has expired"
+    REACTION_NOT_FOUND: str = "Reaction not found"
+    COMMENT_NOT_FOUND: str = "Comment not found"
+    POST_NOT_FOUND: str = "Post not found"
+    INVALID_PARENT_COMMENT: str = "Invalid parent comment"
+    NOT_ALLOWED: str = "You are not allowed to perform this action"
 
 
 exceptions = CustomException()

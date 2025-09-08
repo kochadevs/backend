@@ -1,6 +1,7 @@
 """
 Authentication and Authorization APIs
 """
+from hmac import new
 from typing import Any
 # from datetime import datetime, timedelta
 
@@ -11,18 +12,22 @@ from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jose import jwt
-
 from api.api_models.user import (
-    UserResponse, UserSignup, UserUpdate, AllUserResponse,
+    UserSignup, UserUpdate, AllUserResponse,
     ForgotPasswordRequest, ResetPasswordRequest
 )
 from db.database import get_db
 from db.models.user import User
-from core.config import settings
+from db.models.onboarding import (
+    NewRoleValue, JobSearchStatus, RoleofInterest, Industry, Skills, CareerGoals
+)
+# from core.config import settings
 from core.exceptions import exceptions
 from services.user import UserService
-from api.api_models.login import Token
+from api.api_models.login import (
+    Token, UserNewRoleValue, UserResponse, JobSearchStatusModel,
+    RoleOfInterestModel, IndustryModel, SkillsModel, CareerGoalsModel
+    )
 from utils.oauth2 import (
     get_access_token, get_current_user, get_refresh_token, create_reset_token,
     verify_reset_token, get_password_hash
@@ -183,3 +188,166 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=exceptions.PASSWORD_RESET_ERROR
         )
+
+
+@auth_router.get("/me", response_model=UserResponse)
+def read_users_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Any:
+    """Get currently logged in user"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    return db_user
+
+
+@auth_router.get("/{user_id}", response_model=UserResponse)
+def get_user_profile(user_id: int, db: Session = Depends(get_db)) -> Any:
+    """Get user's profile"""
+    user_service = UserService(db)
+    user_profile = user_service.get_user_profile(user_id)
+    if not user_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=exceptions.USER_NOT_FOUND
+        )
+    return user_profile
+
+
+@auth_router.post("/new-role-values", status_code=status.HTTP_200_OK)
+def add_new_role_values(
+    new_role_values: UserNewRoleValue,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add values user is looking for in the new role"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if new_role_values.new_role_values:
+        db_items = db.query(NewRoleValue).filter(
+            NewRoleValue.id.in_(new_role_values.new_role_values)
+        ).all()
+        db_user.new_role_values = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@auth_router.post("/job-search-status", status_code=status.HTTP_200_OK)
+def add_job_search_status(
+    job_search_status: JobSearchStatusModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add job search status"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if job_search_status.job_search_status:
+        db_items = db.query(JobSearchStatus).filter(JobSearchStatus.id.in_(
+            job_search_status.job_search_status
+        )).all()
+    db_user.job_search_status = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@auth_router.post("/role-of-interest", status_code=status.HTTP_200_OK)
+def add_role_of_interest(
+    roles_of_interest: RoleOfInterestModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add roles of interest"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if roles_of_interest:
+        db_items = db.query(RoleofInterest).filter(RoleofInterest.id.in_(roles_of_interest)).all()
+        db_user.roles_of_interest = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@auth_router.post("/industry", status_code=status.HTTP_200_OK)
+def add_industry(
+    industries: IndustryModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add industries of interest"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if industries.industries:
+        db_items = db.query(Industry).filter(Industry.id.in_(industries.industries)).all()
+        db_user.industries = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@auth_router.post("/skills", status_code=status.HTTP_200_OK)
+def add_skills(
+    skills: SkillsModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add skills"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if skills.skills:
+        db_items = db.query(Skills).filter(Skills.id.in_(skills.skills)).all()
+        db_user.skills = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@auth_router.post("/career-goals", status_code=status.HTTP_200_OK)
+def add_career_goals(
+    career_goals: CareerGoalsModel,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add career goals"""
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=exceptions.UNAUTHORIZED_USER
+        )
+    if career_goals.career_goals:
+        db_items = db.query(CareerGoals).filter(
+            CareerGoals.id.in_(career_goals.career_goals)
+        ).all()
+        db_user.career_goals = db_items
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user

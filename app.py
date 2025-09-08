@@ -12,6 +12,7 @@ from db.repository.seed import seed_initial_onboarding_data
 
 from api.routes.auth import auth_router
 from api.routes.onabording import onboarding_router
+from api.routes.feed import feed_router
 
 
 async def lifespan(db: Session) -> Any:
@@ -54,3 +55,4 @@ def redirect() -> dict:
 v1_prefix = "/api/v1"
 app.include_router(auth_router, prefix=v1_prefix)
 app.include_router(onboarding_router, prefix=v1_prefix)
+app.include_router(feed_router, prefix=v1_prefix)
