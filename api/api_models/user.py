@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     location: Optional[str] = Field(None)
     is_active: bool = Field(default=True)
     profile_pic: Optional[str] = Field(None)
+    about: Optional[str] = Field(None)
 
 
 class UserSignup(UserBase):
@@ -47,8 +48,10 @@ class UserResponse(UserBase):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None)
     last_name: Optional[str] = Field(None)
+    nationality: Optional[str] = Field(...)
+    location: Optional[str] = Field(None)
     profile_pic: Optional[str] = Field(None)
-    religion: Optional[str] = Field(None)
+    about: Optional[str] = Field(None)
 
 
 class UserLogin(BaseModel):

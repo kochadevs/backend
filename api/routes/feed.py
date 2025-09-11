@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from db.models.user import User
 from db.models.posts import Post
+from db.models.groups import Group
 from db.models.comments import Comment
 from db.models.reactions import Reaction
 from api.api_models.posts import (
@@ -42,6 +43,18 @@ def create_post(
         db: Session = Depends(get_db),
         user: User = Depends(get_current_user),
 ):
+    # If group_id provided, validate group exists and is accessible
+    if payload.group_id is not None:
+        g = db.get(Group, payload.group_id)
+        if not g:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid group")
+        if not g.is_public and g.created_by != user.id:
+            # Simple visibility rule: only owner can post to private group (adjust as needed)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not allowed to post in this group")
     post = Post(user_id=user.id, content=payload.content)
     db.add(post)
     db.commit()
@@ -51,6 +64,7 @@ def create_post(
     return PostBriefOut(
         id=post.id,
         user_id=post.user_id,
+        group_id=post.group_id,
         content=post.content,
         date_created=post.date_created,
         last_modified=post.last_modified,
@@ -87,6 +101,7 @@ def list_posts(
     db: Session = Depends(get_db),
     limit: int = Query(20, ge=1, le=100),
     cursor: Optional[str] = Query(None, description="Opaque cursor from previous page"),
+    group_id: Optional[int] = Query(None, description="Filter by sub-community. If omitted, browse community posts)."),
 ):
     stmt = (
         select(
@@ -98,6 +113,14 @@ def list_posts(
         .join(subq_post_reaction_count, subq_post_reaction_count.c.post_id == Post.id, isouter=True)
         .where(_visible_posts_where())
     )
+    if group_id is not None:
+        # validate group exists and is public or accessible (simple rule)
+        g = db.get(Group, group_id)
+        if not g:
+            raise HTTPException(404, "Group not found")
+        if not g.is_public:
+            raise HTTPException(403, "Group is private")
+    stmt = stmt.where(Post.group_id == group_id)
 
     # Keyset condition
     if cursor:
@@ -118,6 +141,7 @@ def list_posts(
             PostBriefOut(
                 id=post.id,
                 user_id=post.user_id,
+                group_id=post.group_id,
                 content=post.content,
                 date_created=post.date_created,
                 last_modified=post.last_modified,

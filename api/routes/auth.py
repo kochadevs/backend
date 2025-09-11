@@ -203,7 +203,11 @@ def read_users_me(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 
 @auth_router.get("/{user_id}", response_model=UserResponse)
-def get_user_profile(user_id: int, db: Session = Depends(get_db)) -> Any:
+def get_user_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+) -> Any:
     """Get user's profile"""
     user_service = UserService(db)
     user_profile = user_service.get_user_profile(user_id)

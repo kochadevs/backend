@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     Integer,
     TIMESTAMP,
+    Text,
     text,
     func
 )
@@ -44,6 +45,7 @@ class User(Base):
     profile_pic = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=False)
     current_role = Column(String, nullable=True)
+    about = Column(Text, nullable=True)
     user_type = Column(
         Enum(UserTypeEnum, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False, default=UserTypeEnum.mentee
@@ -72,4 +74,9 @@ class User(Base):
     )
     career_goals = relationship(
         "CareerGoals", secondary=user_career_goals_assosciation, backref="users"
+    )
+    groups = relationship(
+        "Group",
+        secondary="group_membership",
+        back_populates="members"
     )

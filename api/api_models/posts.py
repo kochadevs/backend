@@ -50,11 +50,13 @@ class CommentsPage(BaseModel):
 
 class PostCreate(BaseModel):
     content: str = Field(min_length=1, max_length=50_000)
+    group_id: Optional[int] = None
 
 
 class PostBriefOut(BaseModel):
     id: int
     user_id: int
+    group_id: Optional[int]
     content: str
     date_created: datetime
     last_modified: datetime

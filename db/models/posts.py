@@ -7,6 +7,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, Text, literal
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.database import Base
+from db.models.groups import Group
 
 
 class Post(Base):
@@ -26,6 +27,8 @@ class Post(Base):
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    group_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("groups.id", ondelete="SET NULL"), nullable=True, index=True)
 
     content: Mapped[str] = mapped_column(Text)
 
@@ -38,6 +41,7 @@ class Post(Base):
     reactions: Mapped[List["Reaction"]] = relationship(
         back_populates="post", cascade="all, delete-orphan"
     )
+    group: Mapped[Optional[Group]] = relationship(back_populates="posts")
 
     __table_args__ = (
         Index(
@@ -46,5 +50,5 @@ class Post(Base):
             "id",
             postgresql_using="btree",
             postgresql_ops={"created_at": "DESC", "id": "DESC"},
-        ),  # helper for keyset scans
+        ),
     )

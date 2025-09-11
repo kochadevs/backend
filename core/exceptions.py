@@ -21,6 +21,10 @@ class CustomException:
     POST_NOT_FOUND: str = "Post not found"
     INVALID_PARENT_COMMENT: str = "Invalid parent comment"
     NOT_ALLOWED: str = "You are not allowed to perform this action"
+    GROUP_ALREADY_EXISTS: str = "Group with that name already exists"
+    GROUP_NOT_FOUND: str = "Group not found"
+    GROUP_FORBIDDEN: str = "Not authorized to delete this group"
+    GROUP_ALREADY_MEMBER: str = "Already a member of the group"
 
 
 exceptions = CustomException()

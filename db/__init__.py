@@ -10,3 +10,4 @@ from db.models.user_association import (
 from db.models.posts import Post
 from db.models.comments import Comment
 from db.models.reactions import Reaction
+from db.models.groups import Group
