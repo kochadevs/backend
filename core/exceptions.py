@@ -25,6 +25,11 @@ class CustomException:
     GROUP_NOT_FOUND: str = "Group not found"
     GROUP_FORBIDDEN: str = "Not authorized to delete this group"
     GROUP_ALREADY_MEMBER: str = "Already a member of the group"
+    MENTOR_PACKAGE_NOT_FOUND: str = "Mentor package not found"
+    MENTOR_PACKAGE_FORBIDDEN: str = "Only mentors can delete packages."
+    MENTOR_BOOKING_FORBIDDEN: str = "Requested booking is not for this user (mentor)."
+    MENTEE_BOOKING_FORBIDDEN: str = "Requested booking is not for this user (mentee)."
+    MENTOR_BOOKING_NOT_FOUND: str = "Mentor booking not found"
 
 
 exceptions = CustomException()

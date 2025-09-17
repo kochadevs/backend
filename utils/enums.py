@@ -12,3 +12,11 @@ class GenderEnum(str, Enum):
 class UserTypeEnum(str, Enum):
     mentor = "mentor"
     mentee = "mentee"
+
+
+class MentorBookingStatusEnum(str, Enum):
+    pending = "pending"
+    confirmed = "confirmed"
+    rejected = "rejected"
+    cancelled = "cancelled"
+    completed = "completed"

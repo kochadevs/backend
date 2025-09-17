@@ -11,3 +11,4 @@ from db.models.posts import Post
 from db.models.comments import Comment
 from db.models.reactions import Reaction
 from db.models.groups import Group
+from db.models.mentors import MentorPackage, MentorBooking
