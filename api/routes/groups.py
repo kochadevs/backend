@@ -46,7 +46,7 @@ def list_groups(
     user: User = Depends(get_current_user)
 ):
     groups = db.query(Group).all()
-    return [GroupOut.model_validate(g) for g in groups]
+    return [GroupOut.model_validate(g) for g in groups if g is not None]
 
 
 @groups_router.get("/{group_id}", response_model=GroupOut)
@@ -134,7 +134,7 @@ def list_my_groups(
         groups = db.query(Group).filter(
             Group.members.any(id=user.id) | (Group.created_by == user.id)
         ).all()
-        return [GroupOut.model_validate(g) for g in groups]
+        return [GroupOut.model_validate(g) for g in groups if g is not None]
     except (Exception, HTTPException) as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
