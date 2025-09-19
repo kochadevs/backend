@@ -18,7 +18,8 @@ class GroupOut(BaseModel):
     description: Optional[str]
     created_by: Optional[int]
     is_public: bool
-    created_at: datetime
+    date_created: datetime
+    last_modified: datetime
 
     class Config:
         from_attributes = True
