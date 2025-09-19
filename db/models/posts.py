@@ -49,6 +49,6 @@ class Post(Base):
             "date_created",
             "id",
             postgresql_using="btree",
-            postgresql_ops={"created_at": "DESC", "id": "DESC"},
+            postgresql_ops={"date_created": "DESC", "id": "DESC"},
         ),
     )
