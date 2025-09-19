@@ -55,7 +55,9 @@ def create_post(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not allowed to post in this group")
-    post = Post(user_id=user.id, content=payload.content)
+    else:
+        payload.group_id = None
+    post = Post(user_id=user.id, content=payload.content, group_id=payload.group_id)
     db.add(post)
     db.commit()
     db.refresh(post)
@@ -63,8 +65,8 @@ def create_post(
     # Attach counts (zeros)
     return PostBriefOut(
         id=post.id,
-        user_id=post.user_id,
-        group_id=post.group_id,
+        user=user,
+        group=post.group,
         content=post.content,
         date_created=post.date_created,
         last_modified=post.last_modified,

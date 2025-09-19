@@ -142,5 +142,5 @@ def list_group_members(
             status_code=status.HTTP_404_NOT_FOUND, detail=exceptions.GROUP_NOT_FOUND)
     group_users = db.query(User).filter(
         User.groups.any(id=group_id) | (User.created_groups.any(id=group_id))
-        ).all()
+    ).all()
     return group_users

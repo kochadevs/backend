@@ -3,7 +3,10 @@ Pydantic models for posts and related entities.
 """
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from api.api_models.user import UserResponse
+from api.api_models.groups import GroupOut
 
 
 class ReactionIn(BaseModel):
@@ -55,8 +58,8 @@ class PostCreate(BaseModel):
 
 class PostBriefOut(BaseModel):
     id: int
-    user_id: int
-    group_id: Optional[int]
+    user: UserResponse
+    group: Optional[GroupOut]
     content: str
     date_created: datetime
     last_modified: datetime
