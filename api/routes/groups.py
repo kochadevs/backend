@@ -130,5 +130,13 @@ def list_my_groups(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    groups = db.query(Group).filter(Group.members.any(id=user.id)).all()
-    return [GroupOut.model_validate(g) for g in groups]
+    try:
+        groups = db.query(Group).filter(
+            Group.members.any(id=user.id) | (Group.created_by == user.id)
+        ).all()
+        return [GroupOut.model_validate(g) for g in groups]
+    except (Exception, HTTPException) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
