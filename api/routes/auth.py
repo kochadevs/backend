@@ -281,8 +281,10 @@ def add_role_of_interest(
             detail=exceptions.UNAUTHORIZED_USER
         )
     if roles_of_interest:
-        db_items = db.query(RoleofInterest).filter(RoleofInterest.id.in_(roles_of_interest)).all()
-        db_user.roles_of_interest = db_items
+        db_items = db.query(RoleofInterest).filter(RoleofInterest.id.in_(
+            roles_of_interest.roles_of_interest
+        )).all()
+        db_user.role_of_interest = db_items
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -304,7 +306,7 @@ def add_industry(
         )
     if industries.industries:
         db_items = db.query(Industry).filter(Industry.id.in_(industries.industries)).all()
-        db_user.industries = db_items
+        db_user.industry = db_items
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

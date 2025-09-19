@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 # from datetime import date
 from typing import Optional
 from api.api_models.onboarding import NewRoleValueResponse
+from utils.enums import UserTypeEnum
 
 
 class UserResponse(BaseModel):
@@ -17,6 +18,7 @@ class UserResponse(BaseModel):
     location: Optional[str]
     is_active: bool
     profile_pic: Optional[str]
+    user_type: UserTypeEnum
     new_role_values: Optional[list[NewRoleValueResponse]] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -7,6 +7,7 @@ from typing import Optional, Any
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, ConfigDict, field_validator, EmailStr
 from core.exceptions import exceptions
+from utils.enums import UserTypeEnum
 
 
 class UserBase(BaseModel):
@@ -19,6 +20,7 @@ class UserBase(BaseModel):
     is_active: bool = Field(default=True)
     profile_pic: Optional[str] = Field(None)
     about: Optional[str] = Field(None)
+    user_type: Optional[str] = Field(UserTypeEnum.mentee.value)
 
 
 class UserSignup(UserBase):
