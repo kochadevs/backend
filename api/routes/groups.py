@@ -5,6 +5,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from api.api_models.user import UserResponse
 from db.database import get_db
 from db.models.groups import Group
 from core.exceptions import exceptions
@@ -38,6 +39,23 @@ def create_group(
     db.commit()
     db.refresh(g)
     return GroupOut.model_validate(g)
+
+
+@groups_router.get("/my-groups", response_model=List[GroupOut])
+def list_my_groups(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    try:
+        groups = db.query(Group).filter(
+            Group.members.any(id=user.id) | (Group.created_by == user.id)
+        ).all()
+        return [GroupOut.model_validate(g) for g in groups if g is not None]
+    except (Exception, HTTPException) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 
 @groups_router.get("/", response_model=List[GroupOut])
@@ -94,19 +112,6 @@ def join_group(
     return {"detail": "Joined group"}
 
 
-@groups_router.get("/{group_id}/members", response_model=List[int])
-def list_group_members(
-    group_id: int,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user)
-):
-    g = db.get(Group, group_id)
-    if not g:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=exceptions.GROUP_NOT_FOUND)
-    return [member.id for member in g.members]
-
-
 @groups_router.post("/{group_id}/leave", status_code=status.HTTP_200_OK)
 def leave_group(
     group_id: int,
@@ -125,18 +130,17 @@ def leave_group(
     return {"detail": "Left group"}
 
 
-@groups_router.get("/my-groups", response_model=List[GroupOut])
-def list_my_groups(
+@groups_router.get("/{group_id}/members", response_model=List[UserResponse])
+def list_group_members(
+    group_id: int,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    try:
-        groups = db.query(Group).filter(
-            Group.members.any(id=user.id) | (Group.created_by == user.id)
-        ).all()
-        return [GroupOut.model_validate(g) for g in groups if g is not None]
-    except (Exception, HTTPException) as e:
+    g = db.get(Group, group_id)
+    if not g:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+            status_code=status.HTTP_404_NOT_FOUND, detail=exceptions.GROUP_NOT_FOUND)
+    group_users = db.query(User).filter(
+        User.groups.any(id=group_id) | (User.created_groups.any(id=group_id))
+        ).all()
+    return group_users

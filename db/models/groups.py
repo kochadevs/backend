@@ -41,6 +41,9 @@ class Group(Base):
         secondary="group_membership",
         back_populates="groups"
     )
+    group_creator = relationship(
+        "User", backref="created_groups", foreign_keys=[created_by]
+    )
 
 
 class GroupMembership(Base):
