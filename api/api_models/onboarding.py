@@ -21,5 +21,21 @@ class NewRoleValueResponse(OnboardingBase):
     pass
 
 
+class JobSearchStatusResponse(OnboardingBase):
+    pass
+
+
+class IndustryResponse(OnboardingBase):
+    pass
+
+
+class SkillsResponse(OnboardingBase):
+    pass
+
+
+class CareerGoalsResponse(OnboardingBase):
+    pass
+
+
 class RoleofInterestResponse(OnboardingBase):
     category: Optional[str] = None

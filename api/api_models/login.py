@@ -4,7 +4,10 @@ Login and authentication related Pydantic models.
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 # from datetime import date
 from typing import Optional
-from api.api_models.onboarding import NewRoleValueResponse
+from api.api_models.onboarding import (
+    NewRoleValueResponse, JobSearchStatusResponse,
+    IndustryResponse, RoleofInterestResponse, SkillsResponse, CareerGoalsResponse,
+)
 from utils.enums import UserTypeEnum
 
 
@@ -20,6 +23,12 @@ class UserResponse(BaseModel):
     profile_pic: Optional[str]
     user_type: UserTypeEnum
     new_role_values: Optional[list[NewRoleValueResponse]] = None
+    new_role_values: Optional[list[NewRoleValueResponse]] = None
+    job_search_status: Optional[list[JobSearchStatusResponse]] = None
+    role_of_interest: Optional[list[RoleofInterestResponse]] = None
+    industry: Optional[list[IndustryResponse]] = None
+    skills: Optional[list[SkillsResponse]] = None
+    career_goals: Optional[list[CareerGoalsResponse]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

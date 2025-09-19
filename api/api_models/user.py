@@ -8,6 +8,10 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, ConfigDict, field_validator, EmailStr
 from core.exceptions import exceptions
 from utils.enums import UserTypeEnum
+from api.api_models.onboarding import (
+    NewRoleValueResponse, JobSearchStatusResponse,
+    IndustryResponse, RoleofInterestResponse, SkillsResponse, CareerGoalsResponse,
+)
 
 
 class UserBase(BaseModel):
@@ -42,6 +46,13 @@ class UserSignup(UserBase):
 
 class UserResponse(UserBase):
     id: int = Field(...)
+    new_role_values: Optional[list[NewRoleValueResponse]] = None
+    new_role_values: Optional[list[NewRoleValueResponse]] = None
+    job_search_status: Optional[list[JobSearchStatusResponse]] = None
+    role_of_interest: Optional[list[RoleofInterestResponse]] = None
+    industry: Optional[list[IndustryResponse]] = None
+    skills: Optional[list[SkillsResponse]] = None
+    career_goals: Optional[list[CareerGoalsResponse]] = None
 
     class Config:
         from_attributes = True
