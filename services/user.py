@@ -80,7 +80,7 @@ class UserService:
                 "new_role_values": user.new_role_values,
                 "user_type": user.user_type,
                 "job_search_status": user.job_search_status,
-                "roles_of_interest": user.role_of_interest,
+                "role_of_interest": user.role_of_interest,
                 "industry": user.industry,
                 "skills": user.skills,
                 "career_goals": user.career_goals,
