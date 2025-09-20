@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-from api.api_models.user import UserResponse
+from api.api_models.login import UserResponse
 from api.api_models.groups import GroupOut
 
 

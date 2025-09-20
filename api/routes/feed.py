@@ -139,11 +139,12 @@ def list_posts(
 
     for row in rows[:limit]:
         post: Post = row[0]
+        user = db.query(User).filter(User.id == post.user_id).first()
         items.append(
             PostBriefOut(
                 id=post.id,
-                user_id=post.user_id,
-                group_id=post.group_id,
+                user=user,
+                group=post.group,
                 content=post.content,
                 date_created=post.date_created,
                 last_modified=post.last_modified,
@@ -198,10 +199,12 @@ def get_post_detail(
         cursor=comments_cursor,
         db=db,
     )
+    user = db.query(User).filter(User.id == post.user_id).first()
 
     return PostOut(
         id=post.id,
-        user_id=post.user_id,
+        user=user,
+        group=post.group,
         content=post.content,
         date_created=post.date_created,
         last_modified=post.last_modified,
