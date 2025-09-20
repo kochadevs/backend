@@ -248,11 +248,11 @@ def create_comment(
     db.add(c)
     db.commit()
     db.refresh(c)
-
+    comment_user = db.query(User).filter(User.id == c.user_id).first()
     # Compose brief counts (0 replies at creation; 0 reactions)
     return CommentOut(
         id=c.id,
-        user_id=c.user_id,
+        user=comment_user,
         content=c.content,
         date_created=c.date_created,
         last_modified=c.last_modified,
@@ -341,10 +341,11 @@ def list_comments(
 
     for row in rows[:limit]:
         c: Comment = row[0]
+        comment_user = db.query(User).filter(User.id == c.user_id).first()
         items.append(
             CommentOut(
                 id=c.id,
-                user_id=c.user_id,
+                user=comment_user,
                 content=c.content,
                 date_created=c.date_created,
                 last_modified=c.last_modified,

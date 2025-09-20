@@ -30,7 +30,7 @@ class CommentCreate(BaseModel):
 
 class CommentBriefOut(BaseModel):
     id: int
-    user_id: int
+    user: UserResponse
     content: str
     date_created: datetime
     last_modified: datetime
