@@ -1,11 +1,11 @@
 """
 Common reaction models for the database.
 """
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy import (
-    DateTime, ForeignKey, Index, CheckConstraint,
-    String, text
+    DateTime, ForeignKey, CheckConstraint,
+    String, UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,20 +39,12 @@ class Reaction(Base):
 
     # Exactly one of (post_id, comment_id) must be non-null
     __table_args__ = (
+        # Each user can only react once per target (post/comment) with a given type
+        UniqueConstraint("user_id", "type", "post_id", "comment_id", name="ux_reactions_user_target_type"),
+
+        # Enforce that exactly one of post_id or comment_id is set
         CheckConstraint(
-            "(CASE WHEN post_id IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN comment_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
-            name="ck_reactions_exactly_one_target",
-        ),
-        Index(
-            "ux_reactions_user_post_type",
-            "user_id", "type", "post_id",
-            unique=True,
-            postgresql_where=text("post_id IS NOT NULL")
-        ),
-        Index(
-            "ux_reactions_user_comment_type",
-            "user_id", "type", "comment_id",
-            unique=True,
-            postgresql_where=text("comment_id IS NOT NULL")
+            "(post_id IS NOT NULL AND comment_id IS NULL) OR (post_id IS NULL AND comment_id IS NOT NULL)",
+            name="ck_reactions_target_exclusivity"
         ),
     )

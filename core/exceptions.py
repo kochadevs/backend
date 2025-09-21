@@ -30,6 +30,7 @@ class CustomException:
     MENTOR_BOOKING_FORBIDDEN: str = "Requested booking is not for this user (mentor)."
     MENTEE_BOOKING_FORBIDDEN: str = "Requested booking is not for this user (mentee)."
     MENTOR_BOOKING_NOT_FOUND: str = "Mentor booking not found"
+    MENTEES_RESTRICTION_TO_PACKAGES: str = "Only mentees can book mentor packages."
 
 
 exceptions = CustomException()

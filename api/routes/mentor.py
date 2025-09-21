@@ -34,7 +34,7 @@ def get_mentors(
     # Logic to fetch and return mentors would go here
     all_mentors = db.query(User).filter(
         User.user_type == UserTypeEnum.mentor,
-        User.is_active.is__(True)
+        User.is_active.is_(True)
     ).all()
     return all_mentors
 
@@ -335,3 +335,35 @@ def delete_booking(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+@mentor_router.get("{mentor_id}/packages", response_model=list[MentorPackageResponse])
+def get_packages_for_mentor(
+    mentor_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get all active packages for a specific mentor.
+    """
+    if not user.user_type == UserTypeEnum.mentee:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=exceptions.MENTEES_RESTRICTION_TO_PACKAGES
+        )
+    # Logic to fetch and return mentor packages would go here
+    mentor = db.query(User).filter(
+        User.id == mentor_id,
+        User.user_type == UserTypeEnum.mentor,
+        User.is_active.is_(True)
+    ).first()
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mentor not found."
+        )
+    packages = db.query(MentorPackage).filter(
+        MentorPackage.user_id == mentor_id,
+        MentorPackage.is_active.is_(True)
+    ).all()
+    return packages

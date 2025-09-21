@@ -5,7 +5,8 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, insert
+from sqlalchemy import select, func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from db.models.user import User
@@ -362,8 +363,8 @@ def list_comments(
 
 
 # Upsert/Toggle reaction on a post
-@feed_router.put("/posts/{post_id}/reactions", response_model=ReactionOut)
-def react_to_post(
+@feed_router.put("/posts/{post_id}/reactions")
+async def react_to_post(
     post_id: int,
     payload: ReactionIn,
     db: Session = Depends(get_db),
@@ -377,18 +378,28 @@ def react_to_post(
         )
 
     # Upsert with PostgreSQL ON CONFLICT via insert(...).on_conflict_do_update
-    stmt = (
-        insert(Reaction)
-        .values(user_id=user.id, post_id=post_id, comment_id=None, type=payload.type)
-        .on_conflict_do_update(
-            index_elements=[Reaction.user_id, Reaction.type, Reaction.post_id],
-            set_={"date_created": func.now()},
-        )
-        .returning(Reaction)
+    stmt = pg_insert(Reaction).values(
+        user_id=user.id,
+        type=payload.type,
+        post_id=post_id,
+        comment_id=None
     )
-    r: Reaction = db.execute(stmt).scalar_one()
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["user_id", "type", "post_id", "comment_id"],
+        set_={"type": payload.type, "date_created": func.now()}
+    ).returning(Reaction)
+
+    result = db.execute(stmt)
     db.commit()
-    return ReactionOut.model_validate(r)
+    # db.refresh(result)
+    db_reaction = result.fetchone()
+    print(db_reaction[0])
+    if not db_reaction:
+        raise HTTPException(
+            status_code=500, detail="Failed to add reaction"
+        )
+
+    return ReactionOut.model_validate(db_reaction[0])
 
 
 # Remove reaction from a post
@@ -428,10 +439,10 @@ def react_to_comment(
         )
 
     stmt = (
-        insert(Reaction)
+        pg_insert(Reaction)
         .values(user_id=user.id, post_id=None, comment_id=comment_id, type=payload.type)
         .on_conflict_do_update(
-            index_elements=[Reaction.user_id, Reaction.type, Reaction.comment_id],
+            index_elements=[Reaction.user_id, Reaction.type, Reaction.post_id, Reaction.comment_id],
             set_={"date_created": func.now()},
         )
         .returning(Reaction)
