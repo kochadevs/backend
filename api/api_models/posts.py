@@ -70,11 +70,19 @@ class PostBriefOut(BaseModel):
         from_attributes = True
 
 
+class PostListResponse(PostBriefOut):
+    user_reaction: str | None = None  # Reaction type if the current user reacted
+
+
 class PostOut(PostBriefOut):
     # For post detail, you can include first page of top-level comments.
     top_level_comments: Optional[CommentsPage] = None
 
 
+class PostOutReaction(PostOut):
+    user_reaction: Optional[str] = None
+
+
 class PostsPage(BaseModel):
-    items: List[PostBriefOut]
+    items: List[PostListResponse]
     next_cursor: Optional[str]

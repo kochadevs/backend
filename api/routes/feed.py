@@ -17,7 +17,8 @@ from db.models.reactions import Reaction
 from api.api_models.posts import (
     PostCreate, PostBriefOut, PostOut, PostsPage,
     CommentCreate, CommentOut, CommentsPage,
-    ReactionIn, ReactionOut
+    ReactionIn, ReactionOut, PostListResponse,
+    PostOutReaction
 )
 
 from db.database import get_db
@@ -103,6 +104,7 @@ def delete_post(
 def list_posts(
     db: Session = Depends(get_db),
     limit: int = Query(20, ge=1, le=100),
+    user: User = Depends(get_current_user),
     cursor: Optional[str] = Query(None, description="Opaque cursor from previous page"),
     group_id: Optional[int] = Query(None, description="Filter by sub-community. If omitted, browse community posts)."),
 ):
@@ -140,17 +142,22 @@ def list_posts(
 
     for row in rows[:limit]:
         post: Post = row[0]
-        user = db.query(User).filter(User.id == post.user_id).first()
+        post_user = db.query(User).filter(User.id == post.user_id).first()
+        user_reaction = db.query(Reaction).filter(
+            Reaction.post_id == post.id,
+            Reaction.user_id == user.id
+        ).first()
         items.append(
-            PostBriefOut(
+            PostListResponse(
                 id=post.id,
-                user=user,
+                user=post_user,
                 group=post.group,
                 content=post.content,
                 date_created=post.date_created,
                 last_modified=post.last_modified,
                 comments_count=row.comments_count,
                 reactions_count=row.reactions_count,
+                user_reaction=user_reaction.type if user_reaction else None
             )
         )
 
@@ -162,7 +169,7 @@ def list_posts(
 
 
 # Get post detail + first page of top-level comments
-@feed_router.get("/posts/{post_id}", response_model=PostOut)
+@feed_router.get("/posts/{post_id}", response_model=PostOutReaction)
 def get_post_detail(
     post_id: int,
     db: Session = Depends(get_db),
@@ -201,8 +208,12 @@ def get_post_detail(
         db=db,
     )
     user = db.query(User).filter(User.id == post.user_id).first()
+    user_reaction = db.query(Reaction).filter(
+        Reaction.post_id == post.id,
+        Reaction.user_id == user.id
+    ).first()
 
-    return PostOut(
+    return PostOutReaction(
         id=post.id,
         user=user,
         group=post.group,
@@ -212,6 +223,7 @@ def get_post_detail(
         comments_count=row.comments_count,
         reactions_count=row.reactions_count,
         top_level_comments=comments_page,
+        user_reaction=user_reaction.type if user_reaction else None,
     )
 
 
