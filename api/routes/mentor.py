@@ -174,35 +174,6 @@ def create_mentor_booking(
 
 
 @mentor_router.patch(
-    "/bookings/{booking_id}/confirm", response_model=MentorBookingResponse
-)
-def confirm_booking(
-    booking_id: int,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user)
-):
-    if not user.user_type == UserTypeEnum.mentor:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only mentors can confirm bookings."
-        )
-    # Logic to confirm a booking would go here
-    booking = db.query(MentorBooking).filter(
-        MentorBooking.id == booking_id,
-        MentorBooking.mentor_id == user.id
-    ).first()
-    if not booking:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exceptions.MENTOR_BOOKING_NOT_FOUND
-        )
-    booking.status = MentorBookingStatusEnum.confirmed.value
-    db.commit()
-    db.refresh(booking)
-    return booking
-
-
-@mentor_router.patch(
     "/bookings/{booking_id}/cancel", response_model=MentorBookingResponse
 )
 def cancel_booking(
@@ -235,6 +206,35 @@ def cancel_booking(
             detail=exceptions.MENTEE_BOOKING_FORBIDDEN
         )
     booking.status = MentorBookingStatusEnum.cancelled.value
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+@mentor_router.patch(
+    "/bookings/{booking_id}/confirm", response_model=MentorBookingResponse
+)
+def confirm_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    if not user.user_type == UserTypeEnum.mentor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors can confirm bookings."
+        )
+    # Logic to confirm a booking would go here
+    booking = db.query(MentorBooking).filter(
+        MentorBooking.id == booking_id,
+        MentorBooking.mentor_id == user.id
+    ).first()
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=exceptions.MENTOR_BOOKING_NOT_FOUND
+        )
+    booking.status = MentorBookingStatusEnum.confirmed.value
     db.commit()
     db.refresh(booking)
     return booking
