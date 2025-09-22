@@ -367,3 +367,26 @@ def get_packages_for_mentor(
         MentorPackage.is_active.is_(True)
     ).all()
     return packages
+
+
+@mentor_router.get("{mentor_id}/details", response_model=UserResponse)
+def get_mentor_details(
+    mentor_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get details of a specific mentor.
+    """
+    # Logic to fetch and return mentor details would go here
+    mentor = db.query(User).filter(
+        User.id == mentor_id,
+        User.user_type == UserTypeEnum.mentor,
+        User.is_active.is_(True)
+    ).first()
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=exceptions.MENTOR_NOT_FOUND
+        )
+    return mentor
