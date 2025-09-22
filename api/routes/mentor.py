@@ -165,9 +165,7 @@ def create_mentor_booking(
     # Logic to create a mentor booking would go here
     booking_data = booking.model_dump()
     booking_data["mentee_id"] = user.id
-    created_booking = db.execute(
-        insert(MentorBooking).values(**booking_data)
-    )
+    created_booking = db.add(MentorBooking(**booking_data))
     db.commit()
     db.refresh(created_booking)
     return created_booking
