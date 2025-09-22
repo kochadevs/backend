@@ -3,7 +3,7 @@ Route for the mentor resource.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert
 
 from db.database import get_db
 from db.models.user import User
@@ -160,12 +160,14 @@ def create_mentor_booking(
     if not user.user_type == UserTypeEnum.mentee:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only mentees can create bookings."
+            detail=exceptions.MENTEES_RESTRICTION_TO_BOOKINGS
         )
     # Logic to create a mentor booking would go here
     booking_data = booking.model_dump()
     booking_data["mentee_id"] = user.id
-    created_booking = db.execute(insert(MentorBooking).values(**booking_data))
+    created_booking = db.execute(
+        insert(MentorBooking).values(**booking_data)
+    )
     db.commit()
     db.refresh(created_booking)
     return created_booking
