@@ -16,6 +16,7 @@ class UserTypeEnum(str, Enum):
 
 class MentorBookingStatusEnum(str, Enum):
     pending = "pending"
+    accepted: str = "accepted"
     confirmed = "confirmed"
     rejected = "rejected"
     cancelled = "cancelled"
