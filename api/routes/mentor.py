@@ -16,6 +16,7 @@ from api.api_models.mentors import (
     MentorPackageCreate, MentorPackageResponse,
     MentorBookingResponse, MentorBookingCreate
 )
+from utils.enums import MentorBookingStatusEnum
 
 
 mentor_router = APIRouter(tags=["Mentor"], prefix="/mentors")
@@ -195,7 +196,7 @@ def confirm_booking(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=exceptions.MENTOR_BOOKING_NOT_FOUND
         )
-    booking.status = "confirmed"
+    booking.status = MentorBookingStatusEnum.confirmed.value
     db.commit()
     db.refresh(booking)
     return booking
@@ -233,7 +234,7 @@ def cancel_booking(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=exceptions.MENTEE_BOOKING_FORBIDDEN
         )
-    booking.status = "canceled"
+    booking.status = MentorBookingStatusEnum.cancelled.value
     db.commit()
     db.refresh(booking)
     return booking
