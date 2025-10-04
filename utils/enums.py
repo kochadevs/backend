@@ -21,3 +21,8 @@ class MentorBookingStatusEnum(str, Enum):
     rejected = "rejected"
     cancelled = "cancelled"
     completed = "completed"
+
+
+class RoomTypeEnum(str, Enum):
+    direct: str = "direct"
+    group: str = "group"

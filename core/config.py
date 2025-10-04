@@ -23,6 +23,8 @@ class Settings:
         "DATABASE_URL",
         f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
     )
+    # Redis connection
+    REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     # App specific
     SECRET: str = os.environ.get("SECRET", "ASq0nueapAebeopyxeU9QV3BCJw89LhJo")
     REFRESH_SECRET: str = os.environ.get("REFRESH_SECRET", "jYZVNaheqameBLHvTqbjYZVNrAZr3prHer5g6RJk")

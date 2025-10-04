@@ -21,6 +21,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    env_file:
+      - .env
 
   app:
     build: 
@@ -37,6 +39,18 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    
+  redis:
+    image: "redis:alpine"
+    container_name: kocharedis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    env_file:
+      - .env
 
 volumes:
   kochadevdata:
+  redis_data:

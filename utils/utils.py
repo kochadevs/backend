@@ -6,10 +6,12 @@ from datetime import datetime
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 from fastapi import HTTPException
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models.posts import Post
 from db.models.comments import Comment
 from db.models.reactions import Reaction
+from db.models.chat import ChatRoomMember
 
 
 def _encode_cursor(ts: datetime, id_: int) -> str:
@@ -67,3 +69,26 @@ subq_comment_reaction_count = (
     .group_by(Reaction.comment_id)
     .subquery()
 )
+
+
+async def _validate_room_membership(
+    db: AsyncSession, user_id: int, room_id: int
+) -> bool:
+    result = await db.execute(
+        select(ChatRoomMember).where(
+            ChatRoomMember.user_id == user_id,
+            ChatRoomMember.chat_room_id == room_id
+        )
+    )
+    membership = result.scalars().first()
+    return membership is not None
+
+
+def generate_room_name(sender_email: str, recipient_email: str) -> str:
+    """
+    Generate a hash-based room name for direct chats
+    """
+    emails = sorted([sender_email, recipient_email])
+    combined = "|".join(emails).encode()
+    print(f"Generated room name for {emails}: {combined}")
+    return urlsafe_b64encode(combined).decode()

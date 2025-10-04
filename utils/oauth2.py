@@ -12,9 +12,11 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from core.config import settings
 from core.exceptions import exceptions
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from db import database
+from db.database import get_db, async_get_db
 from db.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/v1/users/login')
@@ -81,11 +83,36 @@ def verify_refresh_token(token: str):
 # Get currently logged in User
 def get_current_user(
         token: str = Depends(oauth2_scheme),
-        db: Session = Depends(database.get_db)):
+        db: Session = Depends(get_db)):
 
     payload = jwt.decode(token, settings.SECRET, algorithms=settings.ALGORITHM)
     token = verify_token(token, credential_exception)
     user = db.query(User).filter(User.id == token.id).first()
+    if not user:
+        raise credential_exception
+    if not user.is_active:
+        return False
+    # Check if token was issued before role was modified
+    token_iat = datetime.fromtimestamp(payload.get("iat")).astimezone()
+    if user and datetime.now(timezone.utc) < token_iat:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+async def get_current_user_from_request(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(async_get_db),
+):
+    payload = jwt.decode(token, settings.SECRET, algorithms=settings.ALGORITHM)
+    payload_token = verify_token(token, credential_exception)
+    result = await db.execute(
+        select(User).where(User.id == int(payload_token.id))
+    )
+    user: User = result.scalars().first()
     if not user:
         raise credential_exception
     if not user.is_active:

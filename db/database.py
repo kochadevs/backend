@@ -6,6 +6,8 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from core.config import settings
 
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
 
 pg_user: str = settings.POSTGRES_USER
 pg_pass: str = settings.POSTGRES_PASSWORD
@@ -36,3 +38,17 @@ def get_db() -> Any:
         yield db
     finally:
         db.close()
+
+
+async_engine = create_async_engine(
+    SQLALCHEMY_DB_URL.replace("postgresql://", "postgresql+asyncpg://"),
+    echo=False,
+)
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine, class_=AsyncSession, autoflush=False, autocommit=False
+)
+
+
+async def async_get_db() -> Any:
+    async with AsyncSessionLocal() as session:
+        yield session
