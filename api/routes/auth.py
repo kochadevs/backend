@@ -26,8 +26,7 @@ from core.exceptions import exceptions
 from services.user import UserService
 from api.api_models.login import (
     Token, UserNewRoleValue, UserResponse, JobSearchStatusModel,
-    RoleOfInterestModel, IndustryModel, SkillsModel, CareerGoalsModel
-    )
+    RoleOfInterestModel, IndustryModel, SkillsModel, CareerGoalsModel)
 from utils.oauth2 import (
     get_access_token, get_current_user, get_refresh_token, create_reset_token,
     verify_reset_token, get_password_hash
@@ -61,7 +60,7 @@ async def signup(
 def login(user: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> Any:
     """Login with OAuth2 Password Form"""
     user_service = UserService(db)
-    user_data = user_service.authenticate_user(user.username.lower(), user.password)
+    user_data = user_service.authenticate_user(user.username, user.password)
     if not user_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

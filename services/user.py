@@ -100,7 +100,6 @@ class UserService:
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
-        email = email.lower()
         return self.crud.get_by(User, email=email)
 
     async def _read_upload_file(self, upload_file: UploadFile) -> bytes:
