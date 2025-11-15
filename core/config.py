@@ -20,7 +20,7 @@ class Settings:
     POSTGRES_DB: str = os.environ.get("POSTGRES_DB", "postgres")
     POSTGRES_TEST_DB: str = os.environ.get("POSTGRES_TEST_DB", "testkochadevappdb")
     DATABASE_URL: str | URL = os.environ.get(
-        "DATABASE_URL",
+        "POSTGRES_URL",
         f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
     )
     # Redis connection
