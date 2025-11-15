@@ -14,7 +14,8 @@ from db.models.mentors import MentorPackage, MentorBooking
 from api.api_models.user import UserResponse
 from api.api_models.mentors import (
     MentorPackageCreate, MentorPackageResponse,
-    MentorBookingResponse, MentorBookingCreate
+    MentorBookingResponse, MentorBookingCreate,
+    MentorScheduleResponse, MentorBookingDetailedResponse
 )
 from utils.enums import MentorBookingStatusEnum
 
@@ -266,6 +267,59 @@ def get_bookings_for_user(
 
 
 @mentor_router.get(
+    "/bookings/schedule", response_model=MentorScheduleResponse
+)
+def get_mentor_schedule(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get mentor's complete schedule with busy slots marked.
+    Only accessible by mentors.
+    """
+    if user.user_type != UserTypeEnum.mentor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors can access their schedule."
+        )
+
+    try:
+        # Fetch all bookings for the mentor with related data
+        bookings = db.query(MentorBooking).filter(
+            MentorBooking.mentor_id == user.id
+        ).all()
+
+        # Build detailed response with busy status
+        detailed_bookings = []
+        for booking in bookings:
+            # Each booking represents a busy slot
+            detailed_booking = MentorBookingDetailedResponse(
+                id=booking.id,
+                booking_date=booking.booking_date,
+                status=booking.status.value if hasattr(booking.status, 'value') else booking.status,
+                notes=booking.notes,
+                date_created=booking.date_created,
+                last_modified=booking.last_modified,
+                mentor=booking.mentor,
+                mentee=booking.mentee,
+                mentor_package=booking.mentor_package,
+                is_busy=True  # All bookings mark slots as busy
+            )
+            detailed_bookings.append(detailed_booking)
+
+        return MentorScheduleResponse(
+            mentor_id=user.id,
+            bookings=detailed_bookings,
+            total_bookings=len(detailed_bookings)
+        )
+    except (Exception, HTTPException) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@mentor_router.get(
     "/bookings/{booking_id}", response_model=MentorBookingResponse
 )
 def get_booking_details(
@@ -392,3 +446,66 @@ def get_mentor_details(
             detail=exceptions.MENTOR_NOT_FOUND
         )
     return mentor
+
+
+@mentor_router.get("/{mentor_id}/schedule", response_model=MentorScheduleResponse)
+def get_specific_mentor_schedule(
+    mentor_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get a specific mentor's schedule with busy slots marked.
+    Useful for mentees to see when a mentor is available.
+    """
+    # Verify the mentor exists and is active
+    mentor = db.query(User).filter(
+        User.id == mentor_id,
+        User.user_type == UserTypeEnum.mentor,
+        User.is_active.is_(True)
+    ).first()
+
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=exceptions.MENTOR_NOT_FOUND
+        )
+
+    try:
+        # Fetch all bookings for the specified mentor
+        # Only show confirmed/accepted bookings to protect privacy
+        bookings = db.query(MentorBooking).filter(
+            MentorBooking.mentor_id == mentor_id,
+            MentorBooking.status.in_([
+                MentorBookingStatusEnum.confirmed,
+                MentorBookingStatusEnum.accepted
+            ])
+        ).all()
+
+        # Build detailed response
+        detailed_bookings = []
+        for booking in bookings:
+            detailed_booking = MentorBookingDetailedResponse(
+                id=booking.id,
+                booking_date=booking.booking_date,
+                status=booking.status.value if hasattr(booking.status, 'value') else booking.status,
+                notes=None,  # Don't expose notes to other users
+                date_created=booking.date_created,
+                last_modified=booking.last_modified,
+                mentor=booking.mentor,
+                mentee=booking.mentee,
+                mentor_package=booking.mentor_package,
+                is_busy=True
+            )
+            detailed_bookings.append(detailed_booking)
+
+        return MentorScheduleResponse(
+            mentor_id=mentor_id,
+            bookings=detailed_bookings,
+            total_bookings=len(detailed_bookings)
+        )
+    except (Exception, HTTPException) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
