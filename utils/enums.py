@@ -12,6 +12,7 @@ class GenderEnum(str, Enum):
 class UserTypeEnum(str, Enum):
     mentor = "mentor"
     mentee = "mentee"
+    admin = "admin"
 
 
 class MentorBookingStatusEnum(str, Enum):

@@ -17,6 +17,8 @@ from api.routes.groups import groups_router
 from api.routes.mentor import mentor_router
 from api.routes.chat import chat_router
 from api.routes.chat_utils import chat_utils_router
+from api.routes.admin import admin_router
+from api.routes.events import events_router
 
 
 async def lifespan(db: Session) -> Any:
@@ -64,3 +66,5 @@ app.include_router(groups_router, prefix=v1_prefix)
 app.include_router(mentor_router, prefix=v1_prefix)
 app.include_router(chat_router, prefix=v1_prefix)
 app.include_router(chat_utils_router, prefix=v1_prefix)
+app.include_router(admin_router, prefix=v1_prefix)
+app.include_router(events_router, prefix=v1_prefix)

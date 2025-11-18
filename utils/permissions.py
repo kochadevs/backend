@@ -12,6 +12,7 @@ from db.models.user import User
 from core.exceptions import exceptions
 from core.config import settings
 from utils.oauth2 import get_current_user
+from utils.enums import UserTypeEnum
 
 
 def has_permission(permission: str, module: str) -> Any:
@@ -30,3 +31,23 @@ def has_permission(permission: str, module: str) -> Any:
             detail=exceptions.INADEQUATE_PERMISSIONS,
         )
     return permission_checker
+
+
+def is_admin(user: User = Depends(get_current_user)) -> User:
+    """Check if the current user is an admin"""
+    if user.user_type != UserTypeEnum.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return user
+
+
+def is_admin_or_self(user_id: int, current_user: User = Depends(get_current_user)) -> User:
+    """Check if the current user is admin or accessing their own data"""
+    if current_user.user_type != UserTypeEnum.admin and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions"
+        )
+    return current_user

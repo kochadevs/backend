@@ -13,3 +13,5 @@ from db.models.reactions import Reaction
 from db.models.groups import Group
 from db.models.mentors import MentorPackage, MentorBooking
 from db.models.chat import ChatRoom, ChatRoomMember, Message
+from db.models.events import Event
+

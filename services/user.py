@@ -70,7 +70,7 @@ class UserService:
             user_dict = {
                 "id": user.id,
                 "first_name": user.first_name,
-                "other_names": user.last_name,
+                "last_name": user.last_name,
                 "email": user.email,
                 "gender": user.gender,
                 "nationality": user.nationality,
