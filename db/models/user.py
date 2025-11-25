@@ -10,7 +10,8 @@ from sqlalchemy import (
     TIMESTAMP,
     Text,
     text,
-    func
+    func,
+    JSON
 )
 from db.database import Base
 from utils.enums import UserTypeEnum
@@ -39,17 +40,26 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=False, unique=True)
-    gender = Column(String, nullable=False)
-    nationality = Column(String, nullable=False)
-    location = Column(String, nullable=True)
+    gender = Column(String, nullable=True)  # Made nullable for step-based signup
+    nationality = Column(String, nullable=True)  # Renamed conceptually to "country"
+    location = Column(String, nullable=True)  # City/State
+    phone = Column(String, nullable=True)  # New field for phone number
     profile_pic = Column(String, nullable=True)
+    cover_photo = Column(String, nullable=True)  # New field for cover photo
     is_active = Column(Boolean, nullable=False, default=False)
+    email_verified = Column(Boolean, nullable=False, default=False)  # New field for email verification
     current_role = Column(String, nullable=True)
-    about = Column(Text, nullable=True)
+    about = Column(Text, nullable=True)  # Bio section
     user_type = Column(
         Enum(UserTypeEnum, values_callable=lambda obj: [e.value for e in obj]),
-        nullable=False, default=UserTypeEnum.mentee
+        nullable=False, default=UserTypeEnum.regular  # Changed default to regular
     )
+
+    # Social links stored as JSON
+    social_links = Column(JSON, nullable=True)  # {"linkedin": "", "twitter": "", "website": "", "portfolio": ""}
+
+    # Availability stored as JSON
+    availability = Column(JSON, nullable=True)  # {"days": ["Monday", "Tuesday"], "times": ["9:00-12:00"]}
 
     # Auth fields
     password = Column(String, nullable=False)

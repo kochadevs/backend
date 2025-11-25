@@ -75,16 +75,22 @@ class UserService:
                 "gender": user.gender,
                 "nationality": user.nationality,
                 "location": user.location,
+                "phone": user.phone,
                 "is_active": user.is_active,
+                "email_verified": user.email_verified,
                 "profile_pic": user.profile_pic,
-                "new_role_values": user.new_role_values,
+                "cover_photo": user.cover_photo,
+                "about": user.about,
+                "current_role": user.current_role,
                 "user_type": user.user_type,
+                "social_links": user.social_links,
+                "availability": user.availability,
+                "new_role_values": user.new_role_values,
                 "job_search_status": user.job_search_status,
                 "role_of_interest": user.role_of_interest,
                 "industry": user.industry,
                 "skills": user.skills,
                 "career_goals": user.career_goals,
-                "about": user.about
             }
             return UserResponse.model_validate(user_dict, from_attributes=True)
 

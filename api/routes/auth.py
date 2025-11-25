@@ -1,9 +1,9 @@
 """
 Authentication and Authorization APIs
 """
-from hmac import new
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Any
-# from datetime import datetime, timedelta
 
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, File, UploadFile, status, Depends, HTTPException, Response
@@ -13,15 +13,16 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.api_models.user import (
-    UserSignup, UserUpdate, AllUserResponse,
-    ForgotPasswordRequest, ResetPasswordRequest
+    UserSignup, UserSignupStep1, UserSignupStep2, UserUpdate, AllUserResponse,
+    ForgotPasswordRequest, ResetPasswordRequest, ResendVerificationRequest,
+    UserTypeUpdateRequest
 )
 from db.database import get_db
 from db.models.user import User
+from db.models.email_verification import EmailVerification
 from db.models.onboarding import (
     NewRoleValue, JobSearchStatus, RoleofInterest, Industry, Skills, CareerGoals
 )
-# from core.config import settings
 from core.exceptions import exceptions
 from services.user import UserService
 from api.api_models.login import (
@@ -31,8 +32,11 @@ from utils.oauth2 import (
     get_access_token, get_current_user, get_refresh_token, create_reset_token,
     verify_reset_token, get_password_hash
 )
-# from utils.permissions import has_permission
-from utils.mail_service import send_password_reset_email, send_password_reset_confirmation
+from utils.mail_service import (
+    send_password_reset_email, send_password_reset_confirmation,
+    send_email_verification, send_welcome_email
+)
+from utils.enums import UserTypeEnum
 
 auth_router = APIRouter(tags=["Auth"], prefix="/users")
 
@@ -42,6 +46,7 @@ async def signup(
     user: UserSignup,
     db: Session = Depends(get_db)
 ) -> Any:
+    """Legacy full registration endpoint - for backwards compatibility"""
     try:
         user_service = UserService(db)
         new_user = await user_service.create_user(user, creator=None)
@@ -51,6 +56,235 @@ async def signup(
     except HTTPException as e:
         db.rollback()
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@auth_router.post("/register/step1", status_code=status.HTTP_201_CREATED)
+async def signup_step1(
+    user: UserSignupStep1,
+    db: Session = Depends(get_db)
+) -> Any:
+    """Step 1: Create account with basic info (name, email, password)"""
+    try:
+        # Validate password confirmation
+        if user.password != user.password_confirmation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.PASSWORDS_MISMATCH
+            )
+
+        # Check if user exists
+        existing_user = db.query(User).filter(User.email == user.email.lower()).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.USER_EXISTS
+            )
+
+        # Create user with minimal info
+        new_user = User(
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email.lower(),
+            password=get_password_hash(user.password),
+            user_type=UserTypeEnum.regular,
+            is_active=False,
+            email_verified=False
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        # Create verification token and send email
+        verification_token = secrets.token_urlsafe(32)
+        email_verification = EmailVerification(
+            user_id=new_user.id,
+            verification_token=verification_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        db.add(email_verification)
+        db.commit()
+
+        # Send verification email
+        await send_email_verification(new_user.email, new_user.first_name, verification_token)
+
+        return {
+            "message": "Account created successfully. Please check your email to verify your account.",
+            "user_id": new_user.id,
+            "email": new_user.email
+        }
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@auth_router.patch("/register/step2/{user_id}", status_code=status.HTTP_200_OK)
+async def signup_step2(
+    user_id: int,
+    profile: UserSignupStep2,
+    db: Session = Depends(get_db)
+) -> Any:
+    """Step 2: Add profile details (gender, phone, country, city)"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=exceptions.USER_NOT_FOUND
+            )
+
+        # Update profile details
+        user.gender = profile.gender
+        user.phone = profile.phone
+        user.nationality = profile.nationality  # Country
+        user.location = profile.location  # City/State
+
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "message": "Profile details updated successfully.",
+            "user_id": user.id
+        }
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@auth_router.get("/verify-email", status_code=status.HTTP_200_OK)
+async def verify_email(
+    token: str,
+    db: Session = Depends(get_db)
+) -> Any:
+    """Step 3: Verify email with magic link token"""
+    try:
+        # Find the verification record
+        verification = db.query(EmailVerification).filter(
+            EmailVerification.verification_token == token
+        ).first()
+
+        if not verification:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid verification token"
+            )
+
+        # Check if expired
+        if verification.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification token has expired. Please request a new one."
+            )
+
+        # Check if already verified
+        if verification.is_verified:
+            return {"message": "Email already verified"}
+
+        # Mark as verified
+        verification.is_verified = True
+
+        # Activate user and mark email as verified
+        user = db.query(User).filter(User.id == verification.user_id).first()
+        if user:
+            user.email_verified = True
+            user.is_active = True
+
+        db.commit()
+
+        # Send welcome email
+        if user:
+            await send_welcome_email(user.email, user.first_name)
+
+        return {"message": "Email verified successfully. You can now log in."}
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@auth_router.post("/resend-verification", status_code=status.HTTP_200_OK)
+async def resend_verification(
+    request: ResendVerificationRequest,
+    db: Session = Depends(get_db)
+) -> Any:
+    """Resend email verification link"""
+    try:
+        user = db.query(User).filter(User.email == request.email.lower()).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=exceptions.USER_NOT_FOUND
+            )
+
+        if user.email_verified:
+            return {"message": "Email is already verified"}
+
+        # Delete old verification tokens
+        db.query(EmailVerification).filter(EmailVerification.user_id == user.id).delete()
+
+        # Create new verification token
+        verification_token = secrets.token_urlsafe(32)
+        email_verification = EmailVerification(
+            user_id=user.id,
+            verification_token=verification_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        db.add(email_verification)
+        db.commit()
+
+        # Send verification email
+        await send_email_verification(user.email, user.first_name, verification_token)
+
+        return {"message": "Verification email sent successfully"}
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@auth_router.patch("/update-user-type", status_code=status.HTTP_200_OK, response_model=UserResponse)
+async def update_user_type(
+    request: UserTypeUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Update user type from regular to mentor or mentee"""
+    try:
+        user = db.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=exceptions.USER_NOT_FOUND
+            )
+
+        # Only allow regular users to change their type
+        if user.user_type != UserTypeEnum.regular:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User type can only be changed from 'regular' to 'mentor' or 'mentee'"
+            )
+
+        # Update user type
+        user.user_type = UserTypeEnum(request.user_type)
+        db.commit()
+        db.refresh(user)
+
+        return user
+    except HTTPException as e:
+        db.rollback()
+        raise e
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -109,6 +343,48 @@ async def update_profile_pic(user_id: int, profile_pic: UploadFile = File(...), 
             detail=exceptions.USER_NOT_FOUND
         )
     return updated_user
+
+
+@auth_router.patch("/update-cover-photo/{user_id}", response_model=UserResponse)
+async def update_cover_photo(
+    user_id: int,
+    cover_photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """Update user's cover photo"""
+    try:
+        # Verify user is updating their own cover photo
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update your own cover photo"
+            )
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=exceptions.USER_NOT_FOUND
+            )
+
+        # Here you would typically upload to S3/cloud storage and get the URL
+        # For now, we'll just store the filename
+        # In production, integrate with your file storage service
+        # user.cover_photo = await upload_to_storage(cover_photo)
+
+        db.commit()
+        db.refresh(user)
+        return user
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @auth_router.get(

@@ -49,24 +49,27 @@ async def send_email(subject: str, recipient_email: str, html_content: str) -> J
         raise Exception(f"An error occurred: {e}")
 
 
-async def send_password_reset_email(email: str, reset_token: str, username: str, email_template):
-    # subject = "Reset Password"
-    rest_base_url = settings.BASE_URL
-    if not settings.BASE_URL.startswith("http"):
-        rest_base_url = f"https://{settings.BASE_URL}" if settings.PRODUCTION_ENV else f"http://{settings.BASE_URL}"
-    reset_password_url = f"{rest_base_url}{settings.URL_PATH}?{urlencode({'token': reset_token})}"
+async def send_password_reset_email(email: str, reset_token: str, username: str, email_template=None):
+    """Send password reset email with magic link"""
+    base_url = settings.BASE_URL
+    if not base_url.startswith("http"):
+        base_url = f"https://{base_url}" if settings.PRODUCTION_ENV else f"http://{base_url}"
+    reset_password_url = f"{base_url}{settings.URL_PATH}?{urlencode({'token': reset_token})}"
 
     if email_template:
         html_content = email_template.html_content.format(username, reset_password_url)
         email_subject = email_template.subject
     else:
         try:
-            html_content = read_html_file(
-                'utils/templates/password-reset.html'
-            ).replace("Hi {}", f"Hi {username},").replace("href={}", f"href={reset_password_url}")
+            html_content = read_html_file('utils/templates/reset_password.html')
+            html_content = html_content.replace("{{user_first_name}}", username)
+            html_content = html_content.replace("{{reset_password_url}}", reset_password_url)
+            html_content = html_content.replace("{{expiration_time}}", "15 minutes")
+            html_content = html_content.replace("{{help_center_url}}", f"{base_url}/help")
+            html_content = html_content.replace("{{contact_url}}", f"{base_url}/contact")
         except FileNotFoundError:
             html_content = f"Hello {username}, please reset your password by clicking this link: {reset_password_url}"
-        email_subject = "Learningbrix Password Reset"
+        email_subject = "Reset Your Password - Kocha"
     await send_email(email_subject, email, html_content)
 
 
@@ -100,3 +103,49 @@ async def welcome_new_user(email: str, username: str, reset_token: str) -> None:
         Click the link below to set your password {reset_password_url}"""
     email_subject = "Learningbrix Welcome Message"
     await send_email(email_subject, email, html_content)
+
+
+async def send_email_verification(email: str, username: str, verification_token: str) -> JSONResponse:
+    """Send email verification magic link to user"""
+    try:
+        base_url = settings.BASE_URL
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}" if settings.PRODUCTION_ENV else f"http://{base_url}"
+        verification_url = f"{base_url}/api/v1/users/verify-email?token={verification_token}"
+
+        html_content = read_html_file('utils/templates/email_varification.html')
+        html_content = html_content.replace("{{user_first_name}}", username)
+        html_content = html_content.replace("{{verification_url}}", verification_url)
+        html_content = html_content.replace("{{expiration_time}}", "24 hours")
+        html_content = html_content.replace("{{help_center_url}}", f"{base_url}/help")
+        html_content = html_content.replace("{{contact_url}}", f"{base_url}/contact")
+    except FileNotFoundError:
+        html_content = f"""
+        Hi {username},
+        Please verify your email by clicking this link: {verification_url}
+        This link expires in 24 hours.
+        """
+    email_subject = "Verify Your Email - Kocha"
+    return await send_email(email_subject, email, html_content)
+
+
+async def send_welcome_email(email: str, username: str) -> JSONResponse:
+    """Send welcome email after successful verification"""
+    try:
+        base_url = settings.BASE_URL
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}" if settings.PRODUCTION_ENV else f"http://{base_url}"
+
+        html_content = read_html_file('utils/templates/welcome_message.html')
+        html_content = html_content.replace("{{user_first_name}}", username)
+        html_content = html_content.replace("{{help_center_url}}", f"{base_url}/help")
+        html_content = html_content.replace("{{twitter_url}}", "https://twitter.com/kocha")
+        html_content = html_content.replace("{{linkedin_url}}", "https://linkedin.com/company/kocha")
+        html_content = html_content.replace("{{instagram_url}}", "https://instagram.com/kocha")
+    except FileNotFoundError:
+        html_content = f"""
+        Welcome to Kocha, {username}!
+        We're excited to have you join our community.
+        """
+    email_subject = "Welcome to Kocha!"
+    return await send_email(email_subject, email, html_content)

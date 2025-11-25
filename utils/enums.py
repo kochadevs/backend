@@ -10,6 +10,7 @@ class GenderEnum(str, Enum):
 
 
 class UserTypeEnum(str, Enum):
+    regular = "regular"  # Default type, can later become mentor or mentee
     mentor = "mentor"
     mentee = "mentee"
     admin = "admin"

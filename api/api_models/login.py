@@ -11,18 +11,36 @@ from api.api_models.onboarding import (
 from utils.enums import UserTypeEnum
 
 
+class SocialLinksResponse(BaseModel):
+    linkedin: Optional[str] = None
+    twitter: Optional[str] = None
+    website: Optional[str] = None
+    portfolio: Optional[str] = None
+
+
+class AvailabilityResponse(BaseModel):
+    days: Optional[list[str]] = None
+    times: Optional[list[str]] = None
+
+
 class UserResponse(BaseModel):
     id: int
     first_name: str
-    last_name: Optional[str]
+    last_name: Optional[str] = None
     email: EmailStr
-    gender: str
-    nationality: str
-    location: Optional[str]
+    gender: Optional[str] = None
+    nationality: Optional[str] = None  # Country
+    location: Optional[str] = None  # City/State
+    phone: Optional[str] = None
     is_active: bool
-    profile_pic: Optional[str]
+    email_verified: Optional[bool] = False
+    profile_pic: Optional[str] = None
+    cover_photo: Optional[str] = None
+    about: Optional[str] = None  # Bio
+    current_role: Optional[str] = None
     user_type: UserTypeEnum
-    new_role_values: Optional[list[NewRoleValueResponse]] = None
+    social_links: Optional[dict] = None
+    availability: Optional[dict] = None
     new_role_values: Optional[list[NewRoleValueResponse]] = None
     job_search_status: Optional[list[JobSearchStatusResponse]] = None
     role_of_interest: Optional[list[RoleofInterestResponse]] = None

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Email</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        color: #374151;
+        margin: 0;
+        padding: 0;
+        background-color: #f9fafb;
+      }
+      .container {
+        max-width: 700px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .header {
+        background: linear-gradient(135deg, #334AFF 0%, #251F99 100%);
+        padding: 40px 30px;
+        text-align: center;
+        color: white;
+      }
+      .content {
+        padding: 48px 40px;
+      }
+      .footer {
+        padding: 32px 40px;
+        text-align: center;
+        color: #6B7280;
+        font-size: 14px;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
+      }
+      .button {
+        background: #334AFF;
+        color: white;
+        padding: 16px 36px;
+        text-decoration: none;
+        border-radius: 8px;
+        display: inline-block;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(51, 74, 255, 0.2);
+      }
+      .button:hover {
+        background: #251F99;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(51, 74, 255, 0.3);
+      }
+      .divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        margin: 40px 0;
+      }
+      .verification-box {
+        background: #f0f9ff;
+        border: 1px solid #e0f2fe;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        margin: 32px 0;
+      }
+      .code-display {
+        background: white;
+        border: 2px dashed #334AFF;
+        border-radius: 8px;
+        padding: 24px;
+        margin: 24px 0;
+        font-family: 'Courier New', monospace;
+        font-size: 32px;
+        font-weight: 700;
+        color: #334AFF;
+        letter-spacing: 8px;
+      }
+      .benefits-list {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 24px;
+        margin: 32px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="padding: 40px 20px;">
+      <div class="container">
+        <div class="header">
+          <div style="font-size: 48px; margin-bottom: 16px;">✔️</div>
+          <h1 style="margin: 0 0 8px 0; font-size: 32px; font-weight: 700;">Verify Your Email</h1>
+          <p style="margin: 0; font-size: 18px; opacity: 0.9;">Complete your Kocha account setup</p>
+        </div>
+
+        <div class="content">
+          <h2 style="margin: 0 0 16px 0; font-size: 24px; color: #111827;">Hello {{user_first_name}},</h2>
+          
+          <p style="margin: 0 0 24px 0; font-size: 16px; color: #6B7280;">
+            Thank you for joining Kocha! To complete your registration and secure your account, 
+            please verify your email address by clicking the button below.
+          </p>
+
+          <div class="verification-box">
+            <h3 style="margin: 0 0 16px 0; font-size: 20px; color: #0369a1;">Verify Your Email Address</h3>
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #0c4a6e;">
+              This ensures we can send you important updates about your career opportunities.
+            </p>
+            
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="{{verification_url}}" class="button">Verify Email Address</a>
+            </div>
+
+            <p style="margin: 16px 0 0 0; font-size: 12px; color: #6B7280;">
+              This verification link expires in <strong>{{expiration_time}}</strong>
+            </p>
+          </div>
+
+          <div class="benefits-list">
+            <h4 style="margin: 0 0 16px 0; font-size: 16px; color: #111827;">Why verify your email?</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #6B7280;">
+              <li>Secure your account and personal information</li>
+              <li>Receive personalized job recommendations</li>
+              <li>Get important updates about your applications</li>
+              <li>Access all Kocha features and resources</li>
+            </ul>
+          </div>
+
+          <div class="divider"></div>
+
+          <p style="margin: 24px 0 0 0; font-size: 14px; color: #6B7280;">
+            If you didn't create an account with Kocha, you can safely ignore this email.
+          </p>
+        </div>
+
+        <div class="footer">
+          <p style="margin: 0 0 16px 0; font-weight: 600; color: #374151;">Kocha - Your Career Companion</p>
+          <div style="margin-bottom: 20px;">
+            <a href="{{help_center_url}}" style="color: #6B7280; text-decoration: none; margin: 0 12px; font-size: 14px;">Help Center</a>
+            <a href="{{contact_url}}" style="color: #6B7280; text-decoration: none; margin: 0 12px; font-size: 14px;">Contact Support</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
