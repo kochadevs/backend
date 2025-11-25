@@ -21,11 +21,9 @@ def read_html_file(file_path) -> str:
 
 async def send_email(subject: str, recipient_email: str, html_content: str) -> JSONResponse:
     """
-    Generic email sending function.
+    Generic email sending function using Gmail SMTP with SSL (port 465).
     """
     email_sender = settings.EMAIL_SENDER
-    # email_password = settings.EMAIL_PASSWORD
-    email_port = int(settings.EMAIL_PORT)
     email_receiver = recipient_email
 
     em = MIMEMultipart()
@@ -38,15 +36,34 @@ async def send_email(subject: str, recipient_email: str, html_content: str) -> J
     context = ssl.create_default_context()
 
     try:
-        with smtplib.SMTP(settings.EMAIL_SERVER, email_port) as smtp:
-            smtp.starttls(context=context)
-            smtp.login(settings.EMAIL_SENDER, settings.EMAIL_PASSWORD)
-            smtp.sendmail(settings.EMAIL_SENDER, email_receiver, em.as_string())
-            logger.info("Email sent successfully")
+        # Use SMTP_SSL (port 465 by default) instead of STARTTLS (port 587)
+        # Port 465 with SSL works more reliably in Docker environments
+        smtp = smtplib.SMTP_SSL(settings.EMAIL_SERVER, int(settings.EMAIL_PORT), context=context, timeout=30)
+
+        # Identify ourselves to the server
+        smtp.ehlo()
+
+        # Login with credentials
+        smtp.login(settings.EMAIL_SENDER, settings.EMAIL_PASSWORD)
+
+        # Send the email
+        smtp.sendmail(settings.EMAIL_SENDER, email_receiver, em.as_string())
+
+        # Close connection
+        smtp.quit()
+
+        logger.info(f"Email sent successfully to {email_receiver}")
         return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"SMTP Authentication failed for {email_receiver}: {str(e)}")
+        raise Exception(f"Email authentication failed. Please check EMAIL_SENDER and EMAIL_PASSWORD")
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP error while sending email to {email_receiver}: {str(e)}")
+        raise Exception(f"SMTP error: {str(e)}")
     except Exception as e:
-        logger.error(f"Error occurred while sending email {e.__str__()}")
-        raise Exception(f"An error occurred: {e}")
+        logger.error(f"Error occurred while sending email to {email_receiver}: {type(e).__name__}: {str(e)}")
+        raise Exception(f"An error occurred while sending email: {str(e)}")
 
 
 async def send_password_reset_email(email: str, reset_token: str, username: str, email_template=None):

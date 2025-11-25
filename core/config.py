@@ -38,10 +38,11 @@ class Settings:
     ALGORITHM: str = os.environ.get("ALGORITHM", "HS256")
     BASE_URL: str = os.environ.get("BASE_URL", "http://localhost:3000")
     # Email settings
+    # Note: Gmail SMTP requires port 465 (SSL) for reliable connection in Docker
     EMAIL_SERVER: str = os.environ.get("EMAIL_SERVER", "smtp.gmail.com")
-    EMAIL_PORT: str | int = os.environ.get("EMAIL_PORT", 587)
-    EMAIL_SENDER: str = os.environ.get("EMAIL_SENDER")
-    EMAIL_PASSWORD: str = os.environ.get("EMAIL_PASSWORD")
+    EMAIL_PORT: str | int = os.environ.get("EMAIL_PORT", 465)
+    EMAIL_SENDER: str = os.environ.get("EMAIL_SENDER", "douglasdanso66@gmail.com")
+    EMAIL_PASSWORD: str = os.environ.get("EMAIL_PASSWORD", "siewjhtnrnjnzgiu")
     URL_PATH: str = "/auth/reset_password"
     AWS_BUCKET_NAME: str | None = os.environ.get("AWS_BUCKET_NAME", None)
     AWS_REGION: str = os.environ.get("AWS_REGION", "eu-west-1")

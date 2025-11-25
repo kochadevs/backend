@@ -1,6 +1,7 @@
 """
 Authentication and Authorization APIs
 """
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -38,6 +39,7 @@ from utils.mail_service import (
 )
 from utils.enums import UserTypeEnum
 
+logger = logging.getLogger(__name__)
 auth_router = APIRouter(tags=["Auth"], prefix="/users")
 
 
@@ -97,11 +99,19 @@ async def signup(
         db.add(email_verification)
         db.commit()
 
-        # Send verification email
-        await send_email_verification(new_user.email, new_user.first_name, verification_token)
+        # Send verification email (non-blocking)
+        try:
+            await send_email_verification(new_user.email, new_user.first_name, verification_token)
+            email_message = "Account created successfully. Please check your email to verify your account."
+        except Exception as e:
+            logger.error(f"Failed to send verification email: {e}")
+            email_message = (
+                "Account created successfully. However, we couldn't send the verification email. "
+                "Please use the resend option."
+            )
 
         return {
-            "message": "Account created successfully. Please check your email to verify your account.",
+            "message": email_message,
             "user_id": new_user.id,
             "email": new_user.email,
             "first_name": new_user.first_name
@@ -160,11 +170,19 @@ async def signup_step1(
         db.add(email_verification)
         db.commit()
 
-        # Send verification email
-        await send_email_verification(new_user.email, new_user.first_name, verification_token)
+        # Send verification email (non-blocking)
+        try:
+            await send_email_verification(new_user.email, new_user.first_name, verification_token)
+            email_message = "Account created successfully. Please check your email to verify your account."
+        except Exception as e:
+            logger.error(f"Failed to send verification email: {e}")
+            email_message = (
+                "Account created successfully. However, we couldn't send the verification email. "
+                "Please use the resend option."
+            )
 
         return {
-            "message": "Account created successfully. Please check your email to verify your account.",
+            "message": email_message,
             "user_id": new_user.id,
             "email": new_user.email
         }
@@ -252,9 +270,12 @@ async def verify_email(
 
         db.commit()
 
-        # Send welcome email
+        # Send welcome email (non-blocking)
         if user:
-            await send_welcome_email(user.email, user.first_name)
+            try:
+                await send_welcome_email(user.email, user.first_name)
+            except Exception as e:
+                logger.error(f"Failed to send welcome email: {e}")
 
         return {"message": "Email verified successfully. You can now log in."}
     except HTTPException as e:
@@ -295,10 +316,13 @@ async def resend_verification(
         db.add(email_verification)
         db.commit()
 
-        # Send verification email
-        await send_email_verification(user.email, user.first_name, verification_token)
-
-        return {"message": "Verification email sent successfully"}
+        # Send verification email (non-blocking)
+        try:
+            await send_email_verification(user.email, user.first_name, verification_token)
+            return {"message": "Verification email sent successfully"}
+        except Exception as e:
+            logger.error(f"Failed to send verification email: {e}")
+            return {"message": "Failed to send verification email. Please try again later or contact support."}
     except HTTPException as e:
         db.rollback()
         raise e
@@ -685,3 +709,73 @@ def add_career_goals(
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+@auth_router.post("/test-email", status_code=status.HTTP_200_OK)
+async def test_email_connection(email: str):
+    """Test email sending functionality with detailed diagnostics"""
+    import ssl
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from core.config import settings
+
+    result = {
+        "config": {
+            "email_server": settings.EMAIL_SERVER,
+            "email_port": settings.EMAIL_PORT,
+            "email_sender": settings.EMAIL_SENDER,
+            "email_password_set": bool(settings.EMAIL_PASSWORD),
+            "email_password_length": len(settings.EMAIL_PASSWORD) if settings.EMAIL_PASSWORD else 0
+        },
+        "connection_test": {},
+        "send_test": {}
+    }
+
+    context = ssl.create_default_context()
+
+    try:
+        # Test SMTP connection with SSL on port 465
+        logger.info(f"Testing SMTP connection to {settings.EMAIL_SERVER}:465")
+        smtp = smtplib.SMTP_SSL(settings.EMAIL_SERVER, 465, context=context, timeout=30)
+        result["connection_test"]["status"] = "connected"
+        result["connection_test"]["port"] = 465
+        result["connection_test"]["method"] = "SSL"
+
+        # Test EHLO
+        smtp.ehlo()
+        result["connection_test"]["ehlo"] = "success"
+
+        # Test login
+        smtp.login(settings.EMAIL_SENDER, settings.EMAIL_PASSWORD)
+        result["connection_test"]["login"] = "success"
+
+        # Create test email
+        em = MIMEMultipart()
+        em['From'] = settings.EMAIL_SENDER
+        em['To'] = email
+        em['Subject'] = "Test Email from Kocha"
+        html_part = MIMEText("<h1>Test Email</h1><p>If you receive this, email is working!</p>", 'html')
+        em.attach(html_part)
+
+        # Send test email
+        smtp.sendmail(settings.EMAIL_SENDER, email, em.as_string())
+        result["send_test"]["status"] = "sent"
+
+        smtp.quit()
+        result["overall_status"] = "success"
+
+    except smtplib.SMTPAuthenticationError as e:
+        result["error"] = f"Authentication failed: {str(e)}"
+        result["overall_status"] = "auth_failed"
+        logger.error(f"SMTP Authentication error: {str(e)}")
+    except smtplib.SMTPException as e:
+        result["error"] = f"SMTP error: {str(e)}"
+        result["overall_status"] = "smtp_error"
+        logger.error(f"SMTP error: {str(e)}")
+    except Exception as e:
+        result["error"] = f"Unexpected error: {type(e).__name__}: {str(e)}"
+        result["overall_status"] = "failed"
+        logger.error(f"Error testing email: {type(e).__name__}: {str(e)}")
+
+    return result
