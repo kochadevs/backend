@@ -1,9 +1,11 @@
 """
 Route for the mentor resource.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import or_, and_
 
 from db.database import get_db
 from db.models.user import User
@@ -39,6 +41,113 @@ def get_mentors(
         User.is_active.is_(True)
     ).all()
     return all_mentors
+
+
+@mentor_router.get("/search", response_model=list[UserResponse])
+def search_mentors(
+    query: Optional[str] = Query(None, description="Search by name, role, or bio"),
+    location: Optional[str] = Query(None, description="Filter by location (city/country)"),
+    skill_ids: Optional[str] = Query(None, description="Comma-separated skill IDs"),
+    industry_ids: Optional[str] = Query(None, description="Comma-separated industry IDs"),
+    role_ids: Optional[str] = Query(None, description="Comma-separated role of interest IDs"),
+    min_price: Optional[int] = Query(None, description="Minimum package price"),
+    max_price: Optional[int] = Query(None, description="Maximum package price"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Search and filter mentors by various criteria.
+
+    Examples:
+    - /mentors/search?query=engineer
+    - /mentors/search?location=Lagos
+    - /mentors/search?skill_ids=1,2,3
+    - /mentors/search?min_price=5000&max_price=20000
+    - /mentors/search?query=software&location=Nigeria&skill_ids=5
+    """
+    try:
+        # Base query - only active mentors
+        mentor_query = db.query(User).filter(
+            User.user_type == UserTypeEnum.mentor,
+            User.is_active == True
+        )
+
+        # Text search in name, current_role, and about (bio)
+        if query:
+            search_filter = or_(
+                User.first_name.ilike(f"%{query}%"),
+                User.last_name.ilike(f"%{query}%"),
+                User.current_role.ilike(f"%{query}%"),
+                User.about.ilike(f"%{query}%")
+            )
+            mentor_query = mentor_query.filter(search_filter)
+
+        # Filter by location (matches both nationality and location fields)
+        if location:
+            location_filter = or_(
+                User.location.ilike(f"%{location}%"),
+                User.nationality.ilike(f"%{location}%")
+            )
+            mentor_query = mentor_query.filter(location_filter)
+
+        # Filter by skills
+        if skill_ids:
+            from db.models.onboarding import Skills
+            skill_id_list = [int(sid.strip()) for sid in skill_ids.split(",") if sid.strip()]
+            if skill_id_list:
+                mentor_query = mentor_query.join(User.skills).filter(
+                    Skills.id.in_(skill_id_list)
+                )
+
+        # Filter by industries
+        if industry_ids:
+            from db.models.onboarding import Industry
+            industry_id_list = [int(iid.strip()) for iid in industry_ids.split(",") if iid.strip()]
+            if industry_id_list:
+                mentor_query = mentor_query.join(User.industry).filter(
+                    Industry.id.in_(industry_id_list)
+                )
+
+        # Filter by roles of interest
+        if role_ids:
+            from db.models.onboarding import RoleofInterest
+            role_id_list = [int(rid.strip()) for rid in role_ids.split(",") if rid.strip()]
+            if role_id_list:
+                mentor_query = mentor_query.join(User.role_of_interest).filter(
+                    RoleofInterest.id.in_(role_id_list)
+                )
+
+        # Filter by package price range
+        if min_price is not None or max_price is not None:
+            # Join with mentor packages to filter by price
+            mentor_query = mentor_query.join(User.mentor_packages).filter(
+                MentorPackage.is_active == True
+            )
+            if min_price is not None:
+                mentor_query = mentor_query.filter(MentorPackage.price >= min_price)
+            if max_price is not None:
+                mentor_query = mentor_query.filter(MentorPackage.price <= max_price)
+
+        # Remove duplicates (in case of multiple package matches)
+        mentor_query = mentor_query.distinct()
+
+        # Apply pagination
+        mentors = mentor_query.offset(skip).limit(limit).all()
+
+        return mentors
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid parameter format: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @mentor_router.post("/packages", response_model=MentorPackageResponse)
