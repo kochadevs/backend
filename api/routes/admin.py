@@ -2,24 +2,77 @@
 Admin routes for user and event management
 """
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from db.database import get_db
 from db.models.user import User
-from api.api_models.user import AllUserResponse
+from api.api_models.user import AllUserResponse, AdminCreateRequest
 from api.api_models.events import EventCreate, EventUpdate, EventResponse
+from api.api_models.login import UserResponse
 from services.user import UserService
 from services.events import EventService
 from utils.permissions import is_admin
-from utils.oauth2 import get_current_user
+from utils.oauth2 import get_current_user, get_password_hash
 from utils.enums import UserTypeEnum
+from core.exceptions import exceptions
 
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 # User Management Routes
+@admin_router.post("/users/create-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_admin_user(
+    admin_data: AdminCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(is_admin)
+):
+    """
+    Create a new admin user (admin only).
+    Only existing admins can create new admin accounts.
+    """
+    try:
+        # Check if email already exists
+        existing_user = db.query(User).filter(User.email == admin_data.email.lower()).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.USER_EXISTS
+            )
+
+        # Create admin user
+        new_admin = User(
+            first_name=admin_data.first_name,
+            last_name=admin_data.last_name,
+            email=admin_data.email.lower(),
+            password=get_password_hash(admin_data.password),
+            gender=admin_data.gender,
+            nationality=admin_data.nationality,
+            location=admin_data.location,
+            phone=admin_data.phone,
+            user_type=UserTypeEnum.admin,
+            is_active=True,  # Admins are active by default
+            email_verified=True  # Admins don't need email verification
+        )
+
+        db.add(new_admin)
+        db.commit()
+        db.refresh(new_admin)
+
+        return new_admin
+
+    except HTTPException as e:
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
 @admin_router.get("/users", response_model=List[AllUserResponse])
 async def get_all_users(
     skip: int = 0,

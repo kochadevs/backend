@@ -41,21 +41,74 @@ from utils.enums import UserTypeEnum
 auth_router = APIRouter(tags=["Auth"], prefix="/users")
 
 
-@auth_router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+@auth_router.post("/register", status_code=status.HTTP_201_CREATED)
 async def signup(
     user: UserSignup,
     db: Session = Depends(get_db)
 ) -> Any:
-    """Legacy full registration endpoint - for backwards compatibility"""
+    """
+    Register a new user with complete profile information.
+    After successful registration, a verification email will be sent.
+    User must verify email before they can log in.
+    """
     try:
-        user_service = UserService(db)
-        new_user = await user_service.create_user(user, creator=None)
+        # Validate password confirmation
+        if user.password != user.password_confirmation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.PASSWORDS_MISMATCH
+            )
+
+        # Check if user exists
+        existing_user = db.query(User).filter(User.email == user.email.lower()).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.USER_EXISTS
+            )
+
+        # Create user with all provided information
+        user_dict = user.model_dump(exclude={"password_confirmation"})
+        user_dict["email"] = user_dict["email"].lower()
+        user_dict["password"] = get_password_hash(user_dict["password"])
+
+        # Validate and set user type (prevent admin creation via signup)
+        if user_dict["user_type"] == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot create admin users through signup"
+            )
+        user_dict["user_type"] = UserTypeEnum(user_dict["user_type"])
+        user_dict["is_active"] = False
+        user_dict["email_verified"] = False
+
+        new_user = User(**user_dict)
+        db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return new_user
+
+        # Create verification token and send email
+        verification_token = secrets.token_urlsafe(32)
+        email_verification = EmailVerification(
+            user_id=new_user.id,
+            verification_token=verification_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        db.add(email_verification)
+        db.commit()
+
+        # Send verification email
+        await send_email_verification(new_user.email, new_user.first_name, verification_token)
+
+        return {
+            "message": "Account created successfully. Please check your email to verify your account.",
+            "user_id": new_user.id,
+            "email": new_user.email,
+            "first_name": new_user.first_name
+        }
     except HTTPException as e:
         db.rollback()
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise e
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

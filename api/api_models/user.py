@@ -44,10 +44,26 @@ class UserBase(BaseModel):
     availability: Optional[Availability] = Field(None)
 
 
-class UserSignup(UserBase):
-    """Full signup model - for backwards compatibility"""
+class UserSignup(BaseModel):
+    """
+    Complete signup model - combines all signup steps.
+    Fields match the signup form in the mockups:
+    - Step 1: Full Name, Email, Password, User Type
+    - Step 2: Gender, Phone, Country (nationality), City (location)
+    """
+    # Step 1 fields (required)
+    first_name: str = Field(..., min_length=1)
+    last_name: Optional[str] = Field(None)
+    email: EmailStr = Field(...)
     password: str = Field(..., min_length=5)
     password_confirmation: str = Field(...)
+    user_type: str = Field(..., description="User type: mentor, mentee, or regular")
+
+    # Step 2 fields (required)
+    gender: str = Field(...)
+    phone: str = Field(...)
+    nationality: str = Field(..., description="Country")
+    location: str = Field(..., description="City/State")
 
     model_config = ConfigDict(from_attributes=True, validate_assignment=True,
                               arbitrary_types_allowed=True)
@@ -59,7 +75,17 @@ class UserSignup(UserBase):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=exceptions.INVALID_EMAIL
             )
-        return email
+        return email.lower()
+
+    @field_validator("user_type")
+    def validate_user_type(cls, user_type) -> Any:
+        valid_types = ["mentor", "mentee", "regular"]
+        if user_type.lower() not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid user type. Must be one of: {', '.join(valid_types)}"
+            )
+        return user_type.lower()
 
 
 class UserSignupStep1(BaseModel):
@@ -114,6 +140,29 @@ class UserTypeUpdateRequest(BaseModel):
                 detail="User type must be either 'mentor' or 'mentee'"
             )
         return user_type
+
+
+class AdminCreateRequest(BaseModel):
+    """Create a new admin user (admin only)"""
+    first_name: str = Field(..., min_length=1)
+    last_name: Optional[str] = Field(None)
+    email: EmailStr = Field(...)
+    password: str = Field(..., min_length=5)
+    gender: Optional[str] = Field(None)
+    nationality: Optional[str] = Field(None)
+    location: Optional[str] = Field(None)
+    phone: Optional[str] = Field(None)
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("email")
+    def validate_email(cls, email) -> Any:
+        if '@' not in email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=exceptions.INVALID_EMAIL
+            )
+        return email.lower()
 
 
 class UserResponse(UserBase):
