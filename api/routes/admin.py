@@ -41,7 +41,7 @@ async def create_admin_user(
                 detail=exceptions.USER_EXISTS
             )
 
-        # Create admin user
+        # Create admin user with all profile fields
         new_admin = User(
             first_name=admin_data.first_name,
             last_name=admin_data.last_name,
@@ -51,6 +51,12 @@ async def create_admin_user(
             nationality=admin_data.nationality,
             location=admin_data.location,
             phone=admin_data.phone,
+            profile_pic=admin_data.profile_pic,
+            cover_photo=admin_data.cover_photo,
+            about=admin_data.about,
+            current_role=admin_data.current_role,
+            social_links=admin_data.social_links.model_dump() if admin_data.social_links else None,
+            availability=admin_data.availability.model_dump() if admin_data.availability else None,
             user_type=UserTypeEnum.admin,
             is_active=True,  # Admins are active by default
             email_verified=True  # Admins don't need email verification

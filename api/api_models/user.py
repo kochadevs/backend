@@ -49,7 +49,7 @@ class UserSignup(BaseModel):
     Complete signup model - combines all signup steps.
     Fields match the signup form in the mockups:
     - Step 1: Full Name, Email, Password, User Type
-    - Step 2: Gender, Phone, Country (nationality), City (location)
+    - Step 2: Gender, Phone, Country (nationality), City (location), Profile Pic, Bio
     """
     # Step 1 fields (required)
     first_name: str = Field(..., min_length=1)
@@ -64,6 +64,10 @@ class UserSignup(BaseModel):
     phone: str = Field(...)
     nationality: str = Field(..., description="Country")
     location: str = Field(..., description="City/State")
+
+    # Optional profile fields
+    profile_pic: Optional[str] = Field(None, description="Profile picture URL")
+    about: Optional[str] = Field(None, description="Bio/About section")
 
     model_config = ConfigDict(from_attributes=True, validate_assignment=True,
                               arbitrary_types_allowed=True)
@@ -148,10 +152,18 @@ class AdminCreateRequest(BaseModel):
     last_name: Optional[str] = Field(None)
     email: EmailStr = Field(...)
     password: str = Field(..., min_length=5)
+
+    # Profile fields
     gender: Optional[str] = Field(None)
     nationality: Optional[str] = Field(None)
     location: Optional[str] = Field(None)
     phone: Optional[str] = Field(None)
+    profile_pic: Optional[str] = Field(None)
+    cover_photo: Optional[str] = Field(None)
+    about: Optional[str] = Field(None, description="Bio/About section")
+    current_role: Optional[str] = Field(None)
+    social_links: Optional[SocialLinks] = Field(None)
+    availability: Optional[Availability] = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
 
