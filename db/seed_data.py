@@ -61,5 +61,6 @@ career_goals = [
     "General Career Development", "Tech/Software Engineering", "Data Science & Analytics",
     "Product Management", "Product Design", "Marketing", "Finance & Consulting",
     "Sales & Business Development", "Entrepreneurship & Startups", "Leadership & Management",
-    "Healthcare", "Finance", "Human Resources"
+    "Healthcare", "Finance", "Human Resources", "Job Search", "Career Guidance/Progression",
+    "Upskilling"
 ]
