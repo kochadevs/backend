@@ -49,3 +49,19 @@ user_career_goals_assosciation = Table(
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
     Column("career_goals_id", Integer, ForeignKey("career_goals.id", ondelete="CASCADE"), primary_key=True)
 )
+
+
+user_mentoring_frequency_assosciation = Table(
+    "user_mentoring_frequency_assosciation",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("mentoring_frequency_id", Integer, ForeignKey("mentoring_frequency.id", ondelete="CASCADE"), primary_key=True)
+)
+
+
+user_mentoring_format_assosciation = Table(
+    "user_mentoring_format_assosciation",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("mentoring_format_id", Integer, ForeignKey("mentoring_format.id", ondelete="CASCADE"), primary_key=True)
+)

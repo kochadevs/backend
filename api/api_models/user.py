@@ -11,6 +11,7 @@ from utils.enums import UserTypeEnum
 from api.api_models.onboarding import (
     NewRoleValueResponse, JobSearchStatusResponse,
     IndustryResponse, RoleofInterestResponse, SkillsResponse, CareerGoalsResponse,
+    MentoringFrequencyResponse, MentoringFormatResponse,
 )
 
 
@@ -39,6 +40,12 @@ class UserBase(BaseModel):
     profile_pic: Optional[str] = Field(None)
     cover_photo: Optional[str] = Field(None)
     about: Optional[str] = Field(None)  # Bio
+    current_role: Optional[str] = Field(None)
+    company: Optional[str] = Field(None)
+    years_of_experience: Optional[int] = Field(None)
+    long_term_goals: Optional[str] = Field(None)
+    code_of_conduct_accepted: bool = Field(default=False)
+    onboarding_completed: bool = Field(default=False)
     user_type: Optional[str] = Field(UserTypeEnum.regular.value)  # Default to regular
     social_links: Optional[SocialLinks] = Field(None)
     availability: Optional[Availability] = Field(None)
@@ -180,12 +187,13 @@ class AdminCreateRequest(BaseModel):
 class UserResponse(UserBase):
     id: int = Field(...)
     new_role_values: Optional[list[NewRoleValueResponse]] = None
-    new_role_values: Optional[list[NewRoleValueResponse]] = None
     job_search_status: Optional[list[JobSearchStatusResponse]] = None
     role_of_interest: Optional[list[RoleofInterestResponse]] = None
     industry: Optional[list[IndustryResponse]] = None
     skills: Optional[list[SkillsResponse]] = None
     career_goals: Optional[list[CareerGoalsResponse]] = None
+    mentoring_frequency: Optional[list[MentoringFrequencyResponse]] = None
+    mentoring_format: Optional[list[MentoringFormatResponse]] = None
 
     class Config:
         from_attributes = True

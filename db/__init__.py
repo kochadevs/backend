@@ -1,6 +1,7 @@
 from db.models.user import User
 from db.models.onboarding import (
-    RoleofInterest, NewRoleValue, JobSearchStatus, Industry, Skills, CareerGoals
+    RoleofInterest, NewRoleValue, JobSearchStatus, Industry, Skills, CareerGoals,
+    MentoringFrequency, MentoringFormat
 )
 from db.models.user_association import (
     user_career_goals_assosciation, user_industry_assosciation,
@@ -14,4 +15,5 @@ from db.models.groups import Group
 from db.models.mentors import MentorPackage, MentorBooking
 from db.models.chat import ChatRoom, ChatRoomMember, Message
 from db.models.events import Event
-
+from db.models.email_verification import EmailVerification
+from db.models.annual_target import AnnualTarget

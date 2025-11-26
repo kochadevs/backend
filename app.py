@@ -20,6 +20,7 @@ from api.routes.chat_utils import chat_utils_router
 from api.routes.admin import admin_router
 from api.routes.events import events_router
 from api.routes.dashboard import dashboard_router
+from api.routes.profile import profile_router
 
 
 async def lifespan(db: Session) -> Any:
@@ -62,6 +63,7 @@ def redirect() -> dict:
 v1_prefix = "/api/v1"
 app.include_router(auth_router, prefix=v1_prefix)
 app.include_router(onboarding_router, prefix=v1_prefix)
+app.include_router(profile_router, prefix=v1_prefix)
 app.include_router(feed_router, prefix=v1_prefix)
 app.include_router(groups_router, prefix=v1_prefix)
 app.include_router(mentor_router, prefix=v1_prefix)

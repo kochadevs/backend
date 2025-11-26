@@ -7,6 +7,7 @@ from typing import Optional
 from api.api_models.onboarding import (
     NewRoleValueResponse, JobSearchStatusResponse,
     IndustryResponse, RoleofInterestResponse, SkillsResponse, CareerGoalsResponse,
+    MentoringFrequencyResponse, MentoringFormatResponse,
 )
 from utils.enums import UserTypeEnum
 
@@ -38,6 +39,12 @@ class UserResponse(BaseModel):
     cover_photo: Optional[str] = None
     about: Optional[str] = None  # Bio
     current_role: Optional[str] = None
+    company: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    long_term_goals: Optional[str] = None
+    code_of_conduct_accepted: bool = False
+    onboarding_completed: bool = False
+    is_onboarded: bool = False  # Computed field for frontend convenience
     user_type: UserTypeEnum
     social_links: Optional[dict] = None
     availability: Optional[dict] = None
@@ -47,6 +54,8 @@ class UserResponse(BaseModel):
     industry: Optional[list[IndustryResponse]] = None
     skills: Optional[list[SkillsResponse]] = None
     career_goals: Optional[list[CareerGoalsResponse]] = None
+    mentoring_frequency: Optional[list[MentoringFrequencyResponse]] = None
+    mentoring_format: Optional[list[MentoringFormatResponse]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

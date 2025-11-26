@@ -19,7 +19,8 @@ from sqlalchemy.orm import relationship
 from db.models.user_association import (
     user_new_role_assosciation, user_job_search_status_assosciation,
     user_role_of_interest_assosciation, user_industry_assosciation,
-    user_skills_assosciation, user_career_goals_assosciation
+    user_skills_assosciation, user_career_goals_assosciation,
+    user_mentoring_frequency_assosciation, user_mentoring_format_assosciation
 )
 
 
@@ -40,27 +41,31 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=False, unique=True)
-    gender = Column(String, nullable=True)  # Made nullable for step-based signup
-    nationality = Column(String, nullable=True)  # Renamed conceptually to "country"
-    location = Column(String, nullable=True)  # City/State
-    phone = Column(String, nullable=True)  # New field for phone number
+    gender = Column(String, nullable=True) 
+    nationality = Column(String, nullable=True) 
+    location = Column(String, nullable=True)
+    phone = Column(String, nullable=True) 
     profile_pic = Column(String, nullable=True)
-    cover_photo = Column(String, nullable=True)  # New field for cover photo
+    cover_photo = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=False)
-    email_verified = Column(Boolean, nullable=False, default=False)  # New field for email verification
+    email_verified = Column(Boolean, nullable=False, default=False)
     current_role = Column(String, nullable=True)
+    company = Column(String, nullable=True) 
+    years_of_experience = Column(Integer, nullable=True)
+    long_term_goals = Column(Text, nullable=True) 
+    code_of_conduct_accepted = Column(Boolean, nullable=False, default=False)
+    onboarding_completed = Column(Boolean, nullable=False, default=False)
     about = Column(Text, nullable=True)  # Bio section
     user_type = Column(
         Enum(UserTypeEnum, values_callable=lambda obj: [e.value for e in obj]),
-        nullable=False, default=UserTypeEnum.regular  # Changed default to regular
+        nullable=False, default=UserTypeEnum.regular
     )
 
     # Social links stored as JSON
-    social_links = Column(JSON, nullable=True)  # {"linkedin": "", "twitter": "", "website": "", "portfolio": ""}
+    social_links = Column(JSON, nullable=True)
 
     # Availability stored as JSON
-    availability = Column(JSON, nullable=True)  # {"days": ["Monday", "Tuesday"], "times": ["9:00-12:00"]}
-
+    availability = Column(JSON, nullable=True)
     # Auth fields
     password = Column(String, nullable=False)
 
@@ -84,6 +89,12 @@ class User(Base):
     )
     career_goals = relationship(
         "CareerGoals", secondary=user_career_goals_assosciation, backref="users"
+    )
+    mentoring_frequency = relationship(
+        "MentoringFrequency", secondary=user_mentoring_frequency_assosciation, backref="users"
+    )
+    mentoring_format = relationship(
+        "MentoringFormat", secondary=user_mentoring_format_assosciation, backref="users"
     )
     groups = relationship(
         "Group",

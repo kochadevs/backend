@@ -82,6 +82,12 @@ class UserService:
                 "cover_photo": user.cover_photo,
                 "about": user.about,
                 "current_role": user.current_role,
+                "company": user.company,
+                "years_of_experience": user.years_of_experience,
+                "long_term_goals": user.long_term_goals,
+                "code_of_conduct_accepted": user.code_of_conduct_accepted,
+                "onboarding_completed": user.onboarding_completed,
+                "is_onboarded": user.onboarding_completed,  # Mirror onboarding_completed for frontend convenience
                 "user_type": user.user_type,
                 "social_links": user.social_links,
                 "availability": user.availability,
@@ -91,6 +97,8 @@ class UserService:
                 "industry": user.industry,
                 "skills": user.skills,
                 "career_goals": user.career_goals,
+                "mentoring_frequency": user.mentoring_frequency,
+                "mentoring_format": user.mentoring_format,
             }
             return UserResponse.model_validate(user_dict, from_attributes=True)
 

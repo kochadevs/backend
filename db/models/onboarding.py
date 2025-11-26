@@ -99,3 +99,33 @@ class CareerGoals(Base):
         onupdate=func.now(),
     )
     name = Column(String, nullable=False, unique=True)
+
+
+class MentoringFrequency(Base):
+    __tablename__ = "mentoring_frequency"
+    id = Column(Integer, primary_key=True, index=True)
+    date_created = Column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+    last_modified = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        onupdate=func.now(),
+    )
+    name = Column(String, nullable=False, unique=True)  # "weekly", "bi-weekly", "monthly"
+
+
+class MentoringFormat(Base):
+    __tablename__ = "mentoring_format"
+    id = Column(Integer, primary_key=True, index=True)
+    date_created = Column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+    last_modified = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        onupdate=func.now(),
+    )
+    name = Column(String, nullable=False, unique=True)  # "video", "phone", "chat", "in-person"
