@@ -137,7 +137,11 @@ class UserService:
             )
 
     def delete_user(self, user_id: int) -> bool:
-        """Delete a user"""
+        """
+        Delete a user from the database.
+        This is a hard delete that removes the user and all related data.
+        Related data will be cascade deleted based on the model relationships.
+        """
         try:
             user = self.get_user_by_id(user_id)
             if not user:
@@ -146,14 +150,20 @@ class UserService:
                     detail="User not found"
                 )
 
-            user.deleted = True
+            # Hard delete - remove user from database
+            # Related data (email_verifications, etc.) will be cascade deleted
+            self.db.delete(user)
             self.db.commit()
             return True
 
+        except HTTPException:
+            self.db.rollback()
+            raise
         except Exception as e:
+            self.db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
+                detail=f"Error deleting user: {str(e)}"
             )
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:

@@ -37,6 +37,8 @@ class Settings:
     )
     ALGORITHM: str = os.environ.get("ALGORITHM", "HS256")
     BASE_URL: str = os.environ.get("BASE_URL", "http://localhost:3000")
+    BACKEND_URL: str = os.environ.get("BACKEND_URL", "https://kocha-backend-72bb8d1170e9.herokuapp.com")
+    FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "https://frontend-dd7ltrw61-kocha-devs-projects.vercel.app")
     # Email settings
     # Note: Gmail SMTP requires port 465 (SSL) for reliable connection in Docker
     EMAIL_SERVER: str = os.environ.get("EMAIL_SERVER", "smtp.gmail.com")

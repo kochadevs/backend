@@ -125,17 +125,19 @@ async def welcome_new_user(email: str, username: str, reset_token: str) -> None:
 async def send_email_verification(email: str, username: str, verification_token: str) -> JSONResponse:
     """Send email verification magic link to user"""
     try:
-        base_url = settings.BASE_URL
-        if not base_url.startswith("http"):
-            base_url = f"https://{base_url}" if settings.PRODUCTION_ENV else f"http://{base_url}"
-        verification_url = f"{base_url}/api/v1/users/verify-email?token={verification_token}"
+        # Use BACKEND_URL for the verification endpoint
+        backend_url = settings.BACKEND_URL
+        verification_url = f"{backend_url}/api/v1/users/verify-email?token={verification_token}"
+
+        # Use FRONTEND_URL for help and contact links
+        frontend_url = settings.FRONTEND_URL
 
         html_content = read_html_file('utils/templates/email_varification.html')
         html_content = html_content.replace("{{user_first_name}}", username)
         html_content = html_content.replace("{{verification_url}}", verification_url)
         html_content = html_content.replace("{{expiration_time}}", "24 hours")
-        html_content = html_content.replace("{{help_center_url}}", f"{base_url}/help")
-        html_content = html_content.replace("{{contact_url}}", f"{base_url}/contact")
+        html_content = html_content.replace("{{help_center_url}}", f"{frontend_url}/help")
+        html_content = html_content.replace("{{contact_url}}", f"{frontend_url}/contact")
     except FileNotFoundError:
         html_content = f"""
         Hi {username},
@@ -149,13 +151,12 @@ async def send_email_verification(email: str, username: str, verification_token:
 async def send_welcome_email(email: str, username: str) -> JSONResponse:
     """Send welcome email after successful verification"""
     try:
-        base_url = settings.BASE_URL
-        if not base_url.startswith("http"):
-            base_url = f"https://{base_url}" if settings.PRODUCTION_ENV else f"http://{base_url}"
+        # Use FRONTEND_URL for all links in welcome email
+        frontend_url = settings.FRONTEND_URL
 
         html_content = read_html_file('utils/templates/welcome_message.html')
         html_content = html_content.replace("{{user_first_name}}", username)
-        html_content = html_content.replace("{{help_center_url}}", f"{base_url}/help")
+        html_content = html_content.replace("{{help_center_url}}", f"{frontend_url}/help")
         html_content = html_content.replace("{{twitter_url}}", "https://twitter.com/kocha")
         html_content = html_content.replace("{{linkedin_url}}", "https://linkedin.com/company/kocha")
         html_content = html_content.replace("{{instagram_url}}", "https://instagram.com/kocha")

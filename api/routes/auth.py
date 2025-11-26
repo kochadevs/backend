@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, File, UploadFile, status, Depends, HTTPException, Response
+from fastapi.responses import RedirectResponse
 
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
@@ -25,6 +26,7 @@ from db.models.onboarding import (
     NewRoleValue, JobSearchStatus, RoleofInterest, Industry, Skills, CareerGoals
 )
 from core.exceptions import exceptions
+from core.config import settings
 from services.user import UserService
 from api.api_models.login import (
     Token, UserNewRoleValue, UserResponse, JobSearchStatusModel,
@@ -230,12 +232,15 @@ async def signup_step2(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@auth_router.get("/verify-email", status_code=status.HTTP_200_OK)
+@auth_router.get("/verify-email")
 async def verify_email(
     token: str,
     db: Session = Depends(get_db)
-) -> Any:
-    """Step 3: Verify email with magic link token"""
+):
+    """
+    Verify email with magic link token.
+    After successful verification, redirects to frontend login page.
+    """
     try:
         # Find the verification record
         verification = db.query(EmailVerification).filter(
@@ -243,21 +248,27 @@ async def verify_email(
         ).first()
 
         if not verification:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid verification token"
+            # Redirect to frontend with error parameter
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?error=invalid_token",
+                status_code=302
             )
 
         # Check if expired
         if verification.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification token has expired. Please request a new one."
+            # Redirect to frontend with error parameter
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?error=token_expired",
+                status_code=302
             )
 
         # Check if already verified
         if verification.is_verified:
-            return {"message": "Email already verified"}
+            # Redirect to frontend with success parameter
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?verified=already",
+                status_code=302
+            )
 
         # Mark as verified
         verification.is_verified = True
@@ -277,13 +288,27 @@ async def verify_email(
             except Exception as e:
                 logger.error(f"Failed to send welcome email: {e}")
 
-        return {"message": "Email verified successfully. You can now log in."}
+        # Redirect to frontend login page with success parameter
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?verified=success",
+            status_code=302
+        )
+
     except HTTPException as e:
         db.rollback()
-        raise e
+        # Redirect to frontend with error parameter
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=verification_failed",
+            status_code=302
+        )
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error(f"Error during email verification: {str(e)}")
+        # Redirect to frontend with error parameter
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=server_error",
+            status_code=302
+        )
 
 
 @auth_router.post("/resend-verification", status_code=status.HTTP_200_OK)
