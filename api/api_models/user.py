@@ -186,6 +186,16 @@ class AdminCreateRequest(BaseModel):
 
 class UserResponse(UserBase):
     id: int = Field(...)
+
+    # Convenience field that mirrors onboarding_completed
+    is_onboarded: bool = Field(default=False)
+
+    # Nested onboarding data
+    professional_background: Optional[dict] = None
+    goals: Optional[dict] = None
+    mentoring_preferences: Optional[dict] = None
+
+    # Legacy flat fields (kept for backward compatibility)
     new_role_values: Optional[list[NewRoleValueResponse]] = None
     job_search_status: Optional[list[JobSearchStatusResponse]] = None
     role_of_interest: Optional[list[RoleofInterestResponse]] = None

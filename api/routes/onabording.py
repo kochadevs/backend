@@ -88,6 +88,11 @@ async def complete_onboarding(
     Complete user onboarding - called when user agrees to code of conduct.
     Validates and saves all onboarding data based on user type.
     """
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to complete onboarding or activate your account"
+        )
     # Validate code of conduct acceptance
     if not onboarding_data.code_of_conduct_accepted:
         raise HTTPException(
@@ -123,7 +128,7 @@ async def complete_onboarding(
     # Clear and update industry associations
     current_user.industry = []
     if prof_bg.industry_ids:
-        industries = await db.execute(
+        industries = db.execute(
             select(Industry).where(Industry.id.in_(prof_bg.industry_ids))
         )
         current_user.industry = list(industries.scalars().all())
@@ -131,7 +136,7 @@ async def complete_onboarding(
     # Clear and update skills associations
     current_user.skills = []
     if prof_bg.skill_ids:
-        skills = await db.execute(
+        skills = db.execute(
             select(Skills).where(Skills.id.in_(prof_bg.skill_ids))
         )
         current_user.skills = list(skills.scalars().all())
@@ -143,7 +148,7 @@ async def complete_onboarding(
         # Clear and update career goals associations
         current_user.career_goals = []
         if onboarding_data.goals.career_goal_ids:
-            career_goals = await db.execute(
+            career_goals = db.execute(
                 select(CareerGoals).where(CareerGoals.id.in_(onboarding_data.goals.career_goal_ids))
             )
             current_user.career_goals = list(career_goals.scalars().all())
@@ -155,7 +160,7 @@ async def complete_onboarding(
         # Clear and update mentoring frequency
         current_user.mentoring_frequency = []
         if prefs.mentoring_frequency_ids:
-            frequencies = await db.execute(
+            frequencies = db.execute(
                 select(MentoringFrequency).where(MentoringFrequency.id.in_(prefs.mentoring_frequency_ids))
             )
             current_user.mentoring_frequency = list(frequencies.scalars().all())
@@ -163,7 +168,7 @@ async def complete_onboarding(
         # Clear and update mentoring format
         current_user.mentoring_format = []
         if prefs.mentoring_format_ids:
-            formats = await db.execute(
+            formats = db.execute(
                 select(MentoringFormat).where(MentoringFormat.id.in_(prefs.mentoring_format_ids))
             )
             current_user.mentoring_format = list(formats.scalars().all())
@@ -173,8 +178,8 @@ async def complete_onboarding(
     current_user.onboarding_completed = True
 
     # Save to database
-    await db.commit()
-    await db.refresh(current_user)
+    db.commit()
+    db.refresh(current_user)
 
     return {
         "message": "Onboarding completed successfully",
@@ -199,7 +204,7 @@ async def get_my_onboarding_data(
     - mentoring_preferences: mentoring preferences (for mentors and mentees)
     """
     # Refresh user to ensure we have all relationships loaded
-    await db.refresh(current_user, [
+    db.refresh(current_user, [
         'industry', 'skills', 'career_goals',
         'mentoring_frequency', 'mentoring_format'
     ])

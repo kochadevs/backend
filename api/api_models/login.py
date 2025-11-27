@@ -24,6 +24,35 @@ class AvailabilityResponse(BaseModel):
     times: Optional[list[str]] = None
 
 
+class ProfessionalBackgroundData(BaseModel):
+    """Professional background nested object"""
+    current_role: Optional[str] = None
+    company: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    industry: Optional[list[IndustryResponse]] = []
+    skills: Optional[list[SkillsResponse]] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GoalsData(BaseModel):
+    """Goals nested object"""
+    career_goals: Optional[list[CareerGoalsResponse]] = []
+    long_term_goals: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MentoringPreferencesData(BaseModel):
+    """Mentoring preferences nested object"""
+    mentoring_frequency: Optional[list[MentoringFrequencyResponse]] = []
+    mentoring_format: Optional[list[MentoringFormatResponse]] = []
+    preferred_skills: Optional[list[SkillsResponse]] = []
+    preferred_industries: Optional[list[IndustryResponse]] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserResponse(BaseModel):
     id: int
     first_name: str
@@ -38,24 +67,24 @@ class UserResponse(BaseModel):
     profile_pic: Optional[str] = None
     cover_photo: Optional[str] = None
     about: Optional[str] = None  # Bio
-    current_role: Optional[str] = None
-    company: Optional[str] = None
-    years_of_experience: Optional[int] = None
-    long_term_goals: Optional[str] = None
-    code_of_conduct_accepted: bool = False
-    onboarding_completed: bool = False
-    is_onboarded: bool = False  # Computed field for frontend convenience
     user_type: UserTypeEnum
     social_links: Optional[dict] = None
     availability: Optional[dict] = None
+
+    # Nested onboarding data
+    professional_background: Optional[ProfessionalBackgroundData] = None
+    goals: Optional[GoalsData] = None
+    mentoring_preferences: Optional[MentoringPreferencesData] = None
+
+    # Onboarding status
+    code_of_conduct_accepted: bool = False
+    onboarding_completed: bool = False
+    is_onboarded: bool = False
+
+    # Legacy fields (kept for backward compatibility, can be removed later)
     new_role_values: Optional[list[NewRoleValueResponse]] = None
     job_search_status: Optional[list[JobSearchStatusResponse]] = None
     role_of_interest: Optional[list[RoleofInterestResponse]] = None
-    industry: Optional[list[IndustryResponse]] = None
-    skills: Optional[list[SkillsResponse]] = None
-    career_goals: Optional[list[CareerGoalsResponse]] = None
-    mentoring_frequency: Optional[list[MentoringFrequencyResponse]] = None
-    mentoring_format: Optional[list[MentoringFormatResponse]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

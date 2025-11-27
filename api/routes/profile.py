@@ -33,7 +33,7 @@ async def get_profile_completion(
     - Overall completion % (average of both)
     """
     # Refresh user to load all relationships
-    await db.refresh(current_user, [
+    db.refresh(current_user, [
         'industry', 'skills', 'career_goals',
         'mentoring_frequency', 'mentoring_format', 'annual_targets'
     ])
@@ -81,8 +81,8 @@ async def create_annual_target(
     )
 
     db.add(new_target)
-    await db.commit()
-    await db.refresh(new_target)
+    db.commit()
+    db.refresh(new_target)
 
     return new_target
 
@@ -93,7 +93,7 @@ async def get_my_annual_targets(
     current_user: User = Depends(get_current_user)
 ) -> List[AnnualTarget]:
     """Get all annual targets for the current user"""
-    await db.refresh(current_user, ['annual_targets'])
+    db.refresh(current_user, ['annual_targets'])
     return current_user.annual_targets
 
 
@@ -106,7 +106,7 @@ async def get_annual_target(
     """Get a specific annual target by ID"""
     from sqlalchemy import select
 
-    result = await db.execute(
+    result = db.execute(
         select(AnnualTarget).where(
             AnnualTarget.id == target_id,
             AnnualTarget.user_id == current_user.id
@@ -133,7 +133,7 @@ async def update_annual_target(
     """Update an annual target"""
     from sqlalchemy import select
 
-    result = await db.execute(
+    result = db.execute(
         select(AnnualTarget).where(
             AnnualTarget.id == target_id,
             AnnualTarget.user_id == current_user.id
@@ -152,8 +152,8 @@ async def update_annual_target(
     for field, value in update_data.items():
         setattr(target, field, value)
 
-    await db.commit()
-    await db.refresh(target)
+    db.commit()
+    db.refresh(target)
 
     return target
 
@@ -167,7 +167,7 @@ async def delete_annual_target(
     """Delete an annual target"""
     from sqlalchemy import select
 
-    result = await db.execute(
+    result = db.execute(
         select(AnnualTarget).where(
             AnnualTarget.id == target_id,
             AnnualTarget.user_id == current_user.id
@@ -181,7 +181,7 @@ async def delete_annual_target(
             detail="Annual target not found"
         )
 
-    await db.delete(target)
-    await db.commit()
+    db.delete(target)
+    db.commit()
 
     return None
