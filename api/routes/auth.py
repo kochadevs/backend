@@ -15,7 +15,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.api_models.user import (
-    UserSignup, UserSignupStep1, UserSignupStep2, UserUpdate, AllUserResponse,
+    UserSignup, UserUpdate, AllUserResponse,
     ForgotPasswordRequest, ResetPasswordRequest, ResendVerificationRequest,
     UserTypeUpdateRequest
 )
