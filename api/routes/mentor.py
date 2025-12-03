@@ -43,6 +43,64 @@ def get_mentors(
     return all_mentors
 
 
+@mentor_router.get("/mentees", response_model=list[UserResponse])
+def get_all_mentees(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get all mentees in the system.
+    Only accessible by mentors.
+    """
+    if user.user_type != UserTypeEnum.mentor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors can access this resource."
+        )
+    
+    all_mentees = db.query(User).filter(
+        User.user_type == UserTypeEnum.mentee,
+        User.is_active.is_(True)
+    ).offset(skip).limit(limit).all()
+    
+    return all_mentees
+
+
+@mentor_router.get("/mentees/me", response_model=list[UserResponse])
+def get_my_mentees(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """
+    Get all mentees who have bookings with the current mentor.
+    Returns unique mentees who have had at least one booking with the mentor.
+    Only accessible by mentors.
+    """
+    if user.user_type != UserTypeEnum.mentor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors can access this resource."
+        )
+    
+    # Get unique mentees who have bookings with this mentor
+    mentee_ids = db.query(MentorBooking.mentee_id).filter(
+        MentorBooking.mentor_id == user.id
+    ).distinct().all()
+    
+    # Extract IDs from result tuples
+    mentee_id_list = [mentee_id[0] for mentee_id in mentee_ids]
+    
+    # Fetch full user details for these mentees
+    mentees = db.query(User).filter(
+        User.id.in_(mentee_id_list),
+        User.is_active.is_(True)
+    ).all()
+    
+    return mentees
+
+
 @mentor_router.get("/search", response_model=list[UserResponse])
 def search_mentors(
     query: Optional[str] = Query(None, description="Search by name, role, or bio"),
