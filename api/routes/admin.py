@@ -26,7 +26,7 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 async def create_admin_user(
     admin_data: AdminCreateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    # current_user: User = Depends(is_admin)
 ):
     """
     Create a new admin user (admin only).

@@ -98,37 +98,6 @@ class UserSignup(BaseModel):
             )
         return user_type.lower()
 
-
-class UserSignupStep1(BaseModel):
-    """Step 1: Create Account - Basic info"""
-    first_name: str = Field(..., min_length=1)
-    last_name: Optional[str] = Field(None)
-    email: EmailStr = Field(...)
-    password: str = Field(..., min_length=5)
-    password_confirmation: str = Field(...)
-
-    model_config = ConfigDict(from_attributes=True, validate_assignment=True)
-
-    @field_validator("email")
-    def validate_email(cls, email) -> Any:
-        if '@' not in email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=exceptions.INVALID_EMAIL
-            )
-        return email.lower()
-
-
-class UserSignupStep2(BaseModel):
-    """Step 2: Profile Details"""
-    gender: str = Field(...)
-    phone: Optional[str] = Field(None)
-    nationality: str = Field(...)  # Country
-    location: Optional[str] = Field(None)  # City/State
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class VerifyEmailRequest(BaseModel):
     """Verify email with magic link token"""
     token: str = Field(...)
@@ -220,6 +189,9 @@ class UserUpdate(BaseModel):
     cover_photo: Optional[str] = Field(None)
     about: Optional[str] = Field(None)  # Bio
     current_role: Optional[str] = Field(None)
+    company: Optional[str] = Field(None)
+    years_of_experience: Optional[int] = Field(None)
+    long_term_goals: Optional[str] = Field(None)
     social_links: Optional[SocialLinks] = Field(None)
     availability: Optional[Availability] = Field(None)
 

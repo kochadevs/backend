@@ -126,110 +126,110 @@ async def signup(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@auth_router.post("/register/step1", status_code=status.HTTP_201_CREATED)
-async def signup_step1(
-    user: UserSignupStep1,
-    db: Session = Depends(get_db)
-) -> Any:
-    """Step 1: Create account with basic info (name, email, password)"""
-    try:
-        # Validate password confirmation
-        if user.password != user.password_confirmation:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=exceptions.PASSWORDS_MISMATCH
-            )
+# @auth_router.post("/register/step1", status_code=status.HTTP_201_CREATED)
+# async def signup_step1(
+#     user: UserSignupStep1,
+#     db: Session = Depends(get_db)
+# ) -> Any:
+#     """Step 1: Create account with basic info (name, email, password)"""
+#     try:
+#         # Validate password confirmation
+#         if user.password != user.password_confirmation:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail=exceptions.PASSWORDS_MISMATCH
+#             )
 
-        # Check if user exists
-        existing_user = db.query(User).filter(User.email == user.email.lower()).first()
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=exceptions.USER_EXISTS
-            )
+#         # Check if user exists
+#         existing_user = db.query(User).filter(User.email == user.email.lower()).first()
+#         if existing_user:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail=exceptions.USER_EXISTS
+#             )
 
-        # Create user with minimal info
-        new_user = User(
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email.lower(),
-            password=get_password_hash(user.password),
-            user_type=UserTypeEnum.regular,
-            is_active=False,
-            email_verified=False
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+#         # Create user with minimal info
+#         new_user = User(
+#             first_name=user.first_name,
+#             last_name=user.last_name,
+#             email=user.email.lower(),
+#             password=get_password_hash(user.password),
+#             user_type=UserTypeEnum.regular,
+#             is_active=False,
+#             email_verified=False
+#         )
+#         db.add(new_user)
+#         db.commit()
+#         db.refresh(new_user)
 
-        # Create verification token and send email
-        verification_token = secrets.token_urlsafe(32)
-        email_verification = EmailVerification(
-            user_id=new_user.id,
-            verification_token=verification_token,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
-        )
-        db.add(email_verification)
-        db.commit()
+#         # Create verification token and send email
+#         verification_token = secrets.token_urlsafe(32)
+#         email_verification = EmailVerification(
+#             user_id=new_user.id,
+#             verification_token=verification_token,
+#             expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+#         )
+#         db.add(email_verification)
+#         db.commit()
 
-        # Send verification email (non-blocking)
-        try:
-            await send_email_verification(new_user.email, new_user.first_name, verification_token)
-            email_message = "Account created successfully. Please check your email to verify your account."
-        except Exception as e:
-            logger.error(f"Failed to send verification email: {e}")
-            email_message = (
-                "Account created successfully. However, we couldn't send the verification email. "
-                "Please use the resend option."
-            )
+#         # Send verification email (non-blocking)
+#         try:
+#             await send_email_verification(new_user.email, new_user.first_name, verification_token)
+#             email_message = "Account created successfully. Please check your email to verify your account."
+#         except Exception as e:
+#             logger.error(f"Failed to send verification email: {e}")
+#             email_message = (
+#                 "Account created successfully. However, we couldn't send the verification email. "
+#                 "Please use the resend option."
+#             )
 
-        return {
-            "message": email_message,
-            "user_id": new_user.id,
-            "email": new_user.email
-        }
-    except HTTPException as e:
-        db.rollback()
-        raise e
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+#         return {
+#             "message": email_message,
+#             "user_id": new_user.id,
+#             "email": new_user.email
+#         }
+#     except HTTPException as e:
+#         db.rollback()
+#         raise e
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@auth_router.patch("/register/step2/{user_id}", status_code=status.HTTP_200_OK)
-async def signup_step2(
-    user_id: int,
-    profile: UserSignupStep2,
-    db: Session = Depends(get_db)
-) -> Any:
-    """Step 2: Add profile details (gender, phone, country, city)"""
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=exceptions.USER_NOT_FOUND
-            )
+# @auth_router.patch("/register/step2/{user_id}", status_code=status.HTTP_200_OK)
+# async def signup_step2(
+#     user_id: int,
+#     profile: UserSignupStep2,
+#     db: Session = Depends(get_db)
+# ) -> Any:
+#     """Step 2: Add profile details (gender, phone, country, city)"""
+#     try:
+#         user = db.query(User).filter(User.id == user_id).first()
+#         if not user:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=exceptions.USER_NOT_FOUND
+#             )
 
-        # Update profile details
-        user.gender = profile.gender
-        user.phone = profile.phone
-        user.nationality = profile.nationality  # Country
-        user.location = profile.location  # City/State
+#         # Update profile details
+#         user.gender = profile.gender
+#         user.phone = profile.phone
+#         user.nationality = profile.nationality  # Country
+#         user.location = profile.location  # City/State
 
-        db.commit()
-        db.refresh(user)
+#         db.commit()
+#         db.refresh(user)
 
-        return {
-            "message": "Profile details updated successfully.",
-            "user_id": user.id
-        }
-    except HTTPException as e:
-        db.rollback()
-        raise e
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+#         return {
+#             "message": "Profile details updated successfully.",
+#             "user_id": user.id
+#         }
+#     except HTTPException as e:
+#         db.rollback()
+#         raise e
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @auth_router.get("/verify-email")
