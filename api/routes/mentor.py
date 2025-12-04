@@ -13,13 +13,14 @@ from utils.enums import UserTypeEnum
 from core.exceptions import exceptions
 from utils.oauth2 import get_current_user
 from db.models.mentors import MentorPackage, MentorBooking
-from api.api_models.user import UserResponse
+from api.api_models.login import UserResponse
 from api.api_models.mentors import (
     MentorPackageCreate, MentorPackageResponse,
     MentorBookingResponse, MentorBookingCreate,
     MentorScheduleResponse, MentorBookingDetailedResponse
 )
 from utils.enums import MentorBookingStatusEnum
+from services.user import UserService
 
 
 mentor_router = APIRouter(tags=["Mentor"], prefix="/mentors")
@@ -35,12 +36,14 @@ def get_mentors(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only mentees can access this resource."
         )
-    # Logic to fetch and return mentors would go here
-    all_mentors = db.query(User).filter(
+    user_service = UserService(db)
+    mentors = db.query(User).filter(
         User.user_type == UserTypeEnum.mentor,
         User.is_active.is_(True)
     ).all()
-    return all_mentors
+    # Convert to UserResponse format (same as login response)
+    mentor_profiles = [user_service.get_user_profile(mentor.id) for mentor in mentors]
+    return mentor_profiles
 
 
 @mentor_router.get("/mentees", response_model=list[UserResponse])
@@ -60,12 +63,15 @@ def get_all_mentees(
             detail="Only mentors can access this resource."
         )
     
-    all_mentees = db.query(User).filter(
+    user_service = UserService(db)
+    mentees = db.query(User).filter(
         User.user_type == UserTypeEnum.mentee,
         User.is_active.is_(True)
     ).offset(skip).limit(limit).all()
     
-    return all_mentees
+    # Convert to UserResponse format (same as login response)
+    mentee_profiles = [user_service.get_user_profile(mentee.id) for mentee in mentees]
+    return mentee_profiles
 
 
 @mentor_router.get("/mentees/me", response_model=list[UserResponse])
@@ -84,6 +90,8 @@ def get_my_mentees(
             detail="Only mentors can access this resource."
         )
     
+    user_service = UserService(db)
+    
     # Get unique mentees who have bookings with this mentor
     mentee_ids = db.query(MentorBooking.mentee_id).filter(
         MentorBooking.mentor_id == user.id
@@ -98,7 +106,9 @@ def get_my_mentees(
         User.is_active.is_(True)
     ).all()
     
-    return mentees
+    # Convert to UserResponse format (same as login response)
+    mentee_profiles = [user_service.get_user_profile(mentee.id) for mentee in mentees]
+    return mentee_profiles
 
 
 @mentor_router.get("/search", response_model=list[UserResponse])
