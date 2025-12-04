@@ -6,9 +6,10 @@ from typing import Optional, List
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
-from api.api_models.user import UserSignup, UserUpdate, UserResponse
+from api.api_models.user import UserSignup, UserUpdate
 from api.api_models.login import (
-    ProfessionalBackgroundData, GoalsData, MentoringPreferencesData
+    ProfessionalBackgroundData, GoalsData, MentoringPreferencesData,
+    UserResponse
 )
 from api.api_models.onboarding import (
     IndustryResponse, SkillsResponse, CareerGoalsResponse,
@@ -117,6 +118,31 @@ class UserService:
             print(f"DEBUG - Mentoring preferences: {mentoring_preferences}")
             print(f"DEBUG - Is onboarded value: {user.onboarding_completed}")
 
+            # Convert social_links and availability to dicts if they are objects
+            print(f"DEBUG - user.social_links type: {type(user.social_links)}, value: {user.social_links}")
+            print(f"DEBUG - user.availability type: {type(user.availability)}, value: {user.availability}")
+            
+            social_links_dict = None
+            if user.social_links:
+                if isinstance(user.social_links, dict):
+                    social_links_dict = user.social_links
+                else:
+                    # Convert Pydantic model to dict
+                    print(f"DEBUG - Converting social_links from {type(user.social_links)}")
+                    social_links_dict = user.social_links.model_dump() if hasattr(user.social_links, 'model_dump') else dict(user.social_links)
+            
+            availability_dict = None
+            if user.availability:
+                if isinstance(user.availability, dict):
+                    availability_dict = user.availability
+                else:
+                    # Convert Pydantic model to dict
+                    print(f"DEBUG - Converting availability from {type(user.availability)}")
+                    availability_dict = user.availability.model_dump() if hasattr(user.availability, 'model_dump') else dict(user.availability)
+            
+            print(f"DEBUG - social_links_dict: {social_links_dict}")
+            print(f"DEBUG - availability_dict: {availability_dict}")
+
             # Convert Pydantic models to dicts for the nested fields
             response = UserResponse(
                 id=user.id,
@@ -133,8 +159,8 @@ class UserService:
                 cover_photo=user.cover_photo,
                 about=user.about,
                 user_type=user.user_type,
-                social_links=user.social_links,
-                availability=user.availability,
+                social_links=social_links_dict,
+                availability=availability_dict,
                 # Nested onboarding data - convert to dicts with mode='json' to serialize datetimes
                 professional_background=professional_background.model_dump(mode='json') if professional_background else None,
                 goals=goals.model_dump(mode='json') if goals else None,

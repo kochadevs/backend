@@ -31,11 +31,6 @@ def get_mentors(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    if not user.user_type == UserTypeEnum.mentee:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only mentees can access this resource."
-        )
     user_service = UserService(db)
     mentors = db.query(User).filter(
         User.user_type == UserTypeEnum.mentor,
@@ -57,18 +52,13 @@ def get_all_mentees(
     Get all mentees in the system.
     Only accessible by mentors.
     """
-    if user.user_type != UserTypeEnum.mentor:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only mentors can access this resource."
-        )
-    
+
     user_service = UserService(db)
     mentees = db.query(User).filter(
         User.user_type == UserTypeEnum.mentee,
         User.is_active.is_(True)
     ).offset(skip).limit(limit).all()
-    
+
     # Convert to UserResponse format (same as login response)
     mentee_profiles = [user_service.get_user_profile(mentee.id) for mentee in mentees]
     return mentee_profiles
