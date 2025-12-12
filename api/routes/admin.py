@@ -79,17 +79,24 @@ async def create_admin_user(
         )
 
 
-@admin_router.get("/users", response_model=List[AllUserResponse])
+@admin_router.get("/users", response_model=List[UserResponse])
 async def get_all_users(
     skip: int = 0,
     limit: int = 10,
     db: Session = Depends(get_db),
     current_user: User = Depends(is_admin)
 ):
-    """Get all users (admin only)"""
+    """Get all users (admin only) - returns same format as login response"""
     user_service = UserService(db)
     users = user_service.get_all_users(skip=skip, limit=limit)
-    return users
+    
+    # Convert each user to the login response format (UserResponse with full profile)
+    user_profiles = []
+    for user in users:
+        user_profile = user_service.get_user_profile(user.id)
+        user_profiles.append(user_profile)
+    
+    return user_profiles
 
 
 @admin_router.patch("/users/{user_id}/user-type")
@@ -195,3 +202,59 @@ async def deactivate_event(
     event_service = EventService(db)
     event = event_service.deactivate_event(event_id)
     return {"message": "Event deactivated successfully", "event": event}
+
+
+# Mentor Management Routes
+@admin_router.patch("/mentors/{user_id}/approve")
+async def approve_mentor(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(is_admin)
+):
+    """Approve a mentor account (admin only)"""
+    user_service = UserService(db)
+    
+    # Get the user and verify they are a mentor
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.user_type != UserTypeEnum.mentor:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a mentor"
+        )
+    
+    # Approve the mentor
+    updated_user = user_service.update_user(user_id, {"is_approved": True})
+    
+    return {
+        "message": "Mentor approved successfully",
+        "user_id": updated_user.id,
+        "email": updated_user.email,
+        "is_approved": updated_user.is_approved
+    }
+
+
+@admin_router.get("/mentors/pending", response_model=List[UserResponse])
+async def get_pending_mentors(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(is_admin)
+):
+    """Get all mentors pending approval (admin only)"""
+    user_service = UserService(db)
+    
+    # Get mentors who are not yet approved
+    pending_mentors = db.query(User).filter(
+        User.user_type == UserTypeEnum.mentor,
+        User.is_approved.is_(False)
+    ).offset(skip).limit(limit).all()
+    
+    # Convert to UserResponse format
+    mentor_profiles = [user_service.get_user_profile(mentor.id) for mentor in pending_mentors]
+    return mentor_profiles

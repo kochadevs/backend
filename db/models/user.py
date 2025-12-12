@@ -49,6 +49,7 @@ class User(Base):
     cover_photo = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=False)
     email_verified = Column(Boolean, nullable=False, default=False)
+    is_approved = Column(Boolean, nullable=False, default=False)
     current_role = Column(String, nullable=True)
     company = Column(String, nullable=True) 
     years_of_experience = Column(Integer, nullable=True)

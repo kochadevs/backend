@@ -34,7 +34,8 @@ def get_mentors(
     user_service = UserService(db)
     mentors = db.query(User).filter(
         User.user_type == UserTypeEnum.mentor,
-        User.is_active.is_(True)
+        User.is_active.is_(True),
+        User.is_approved.is_(True)
     ).all()
     # Convert to UserResponse format (same as login response)
     mentor_profiles = [user_service.get_user_profile(mentor.id) for mentor in mentors]

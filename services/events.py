@@ -56,7 +56,7 @@ class EventService:
         if active_only:
             query = query.filter(Event.is_active.is_(True))
 
-        return query.order_by(Event.event_date.desc()).offset(skip).limit(limit).all()
+        return query.order_by(Event.end_date.desc()).offset(skip).limit(limit).all()
 
     def get_upcoming_events(self, skip: int = 0, limit: int = 10) -> List[Event]:
         """Get upcoming events (active events with future dates)"""
